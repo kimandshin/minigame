@@ -2,1711 +2,332 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bible Verse Round Table Quiz</title>
+  <title>Bible Round Table – Realtime Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root {
-      --bg: #0f172a;
-      --bg-soft: #111827;
-      --accent: #fbbf24;
-      --accent-soft: #fde68a33;
-      --text-main: #e5e7eb;
-      --text-soft: #9ca3af;
-      --danger: #f97373;
-      --card: #1f2937;
-      --timer: #a5b4fc;
-      --border-soft: #374151;
-      --green: #4ade80;
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
     body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
       margin: 0;
-      background: radial-gradient(circle at top, #1e293b, #020617);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-    }
-
-    #app {
-      width: 100%;
-      max-width: 1200px;
       padding: 1rem;
     }
-
-    h1, h2, h3 {
-      margin: 0.25rem 0 0.5rem;
-      font-weight: 700;
-    }
-
+    h1 { margin-top: 0; }
     .panel {
-      background: rgba(15,23,42,0.95);
-      border-radius: 18px;
-      border: 1px solid var(--border-soft);
+      max-width: 900px;
+      margin: 0 auto;
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #334155;
       padding: 1rem 1.25rem;
-      margin-bottom: 0.75rem;
-      box-shadow: 0 25px 60px rgba(15,23,42,0.8);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
     }
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
+    input, button {
+      font: inherit;
     }
-
-    .tag {
-      padding: 0.15rem 0.5rem;
+    input[type="text"] {
+      padding: 0.4rem 0.5rem;
       border-radius: 999px;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      border: 1px solid var(--border-soft);
-      color: var(--text-soft);
+      border: 1px solid #475569;
+      background: #020617;
+      color: #e5e7eb;
+      width: 100%;
+      max-width: 260px;
     }
-
+    button {
+      margin-top: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      border: none;
+      background: #f97316;
+      color: #020617;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #1e293b;
+      color: #e5e7eb;
+    }
     .row {
       display: flex;
-      gap: 0.75rem;
+      gap: 1rem;
       flex-wrap: wrap;
+      margin-top: 0.75rem;
     }
-
-    .grow {
-      flex: 1 1 0;
-      min-width: 230px;
+    .box {
+      flex: 1 1 260px;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      padding: 0.75rem;
+      background: #020617;
     }
-
-    label {
+    .label {
       font-size: 0.8rem;
-      color: var(--text-soft);
-      display: block;
+      color: #9ca3af;
       margin-bottom: 0.15rem;
     }
-
-    input[type="text"], select {
-      width: 100%;
-      padding: 0.45rem 0.6rem;
-      border-radius: 999px;
-      border: 1px solid var(--border-soft);
-      background: #020617;
-      color: var(--text-main);
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.85rem;
+      word-break: break-all;
     }
-
-    input[type="text"]::placeholder {
-      color: #4b5563;
-    }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 0.45rem 0.9rem;
-      font-size: 0.85rem;
-      cursor: pointer;
-      background: var(--accent-soft);
-      color: var(--accent);
-      transition: transform 0.05s ease, box-shadow 0.1s ease, background 0.1s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(15,23,42,0.6);
-      background: rgba(251,191,36,0.16);
-    }
-
-    button.primary {
-      background: linear-gradient(135deg, #fbbf24, #f97316);
-      color: #111827;
-      font-weight: 600;
-    }
-
-    button.primary:hover {
-      background: linear-gradient(135deg, #fde68a, #fb923c);
-    }
-
-    button.danger {
-      background: rgba(248,113,113,0.1);
-      color: #fecaca;
-    }
-
-    button.small {
-      padding: 0.25rem 0.6rem;
-      font-size: 0.75rem;
-    }
-
-    button[disabled] {
-      opacity: 0.4;
-      cursor: default;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .pill {
-      padding: 0.1rem 0.45rem;
-      border-radius: 999px;
-      border: 1px solid var(--border-soft);
-      font-size: 0.7rem;
-      color: var(--text-soft);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .pill span.dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--accent);
-    }
-
-    /* Lobby player list */
-    .player-list {
-      margin-top: 0.5rem;
-      border-radius: 14px;
-      border: 1px solid var(--border-soft);
-      background: rgba(15,23,42,0.7);
-      padding: 0.5rem;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-
-    .player-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.35rem 0.45rem;
-      border-radius: 999px;
-      transition: background 0.1s ease;
-    }
-
-    .player-row:nth-child(odd) {
-      background: rgba(15,23,42,0.6);
-    }
-
-    .player-name {
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .player-meta {
-      display: flex;
-      gap: 0.35rem;
-      align-items: center;
-      font-size: 0.7rem;
-      color: var(--text-soft);
-    }
-
-    .cpu-tag {
-      padding: 0.05rem 0.4rem;
-      border-radius: 999px;
-      font-size: 0.65rem;
-      background: rgba(56,189,248,0.1);
-      color: #7dd3fc;
-    }
-
-    .admin-tag {
-      padding: 0.05rem 0.4rem;
-      border-radius: 999px;
-      font-size: 0.65rem;
-      background: rgba(52,211,153,0.1);
-      color: #6ee7b7;
-    }
-
-    /* Game layout */
-    #game-area {
-      display: none;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.75rem;
+    .field {
       margin-bottom: 0.5rem;
     }
-
-    .timer {
-      font-size: 1.3rem;
+    .section-title {
+      font-size: 0.9rem;
       font-weight: 600;
-      color: var(--timer);
-      letter-spacing: 0.08em;
+      margin-bottom: 0.25rem;
     }
-
-    .timer-pulse {
-      animation: timerPulse 0.4s ease-in-out;
-    }
-
-    @keyframes timerPulse {
-      0% { transform: scale(1); color: var(--timer); }
-      40% { transform: scale(1.5); color: #fecaca; }
-      100% { transform: scale(1); color: var(--timer); }
-    }
-
-    .round-info {
-      font-size: 0.85rem;
-      color: var(--text-soft);
-    }
-
-    .verse-circle-wrapper {
-      margin-top: 0.5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-    }
-
-    .table-circle {
-      width: 420px;
-      max-width: 90vw;
-      height: 420px;
-      max-height: 90vw;
-      border-radius: 50%;
-      border: 2px dashed rgba(148,163,184,0.4);
-      position: relative;
-      overflow: visible;
-      background: radial-gradient(circle, rgba(30,64,175,0.18), rgba(15,23,42,0.9));
-      box-shadow: 0 0 40px rgba(59,130,246,0.4);
-    }
-
-    .verse-center {
-      position: absolute;
-      inset: 18%;
-      border-radius: 24px;
-      background: linear-gradient(145deg, rgba(15,23,42,0.96), rgba(8,47,73,0.92));
-      border: 1px solid rgba(59,130,246,0.6);
-      padding: 0.9rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 0.25rem;
-      box-shadow: 0 0 35px rgba(37,99,235,0.5);
-    }
-
-    .verse-ref {
-      font-size: 0.8rem;
-      color: #a5b4fc;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .verse-text {
-      font-size: 0.9rem;
-      line-height: 1.35;
-    }
-
-    .verse-blink {
-      animation: blink 1.2s linear infinite;
-    }
-
-    @keyframes blink {
-      0%, 49% { opacity: 1; }
-      50%, 70% { opacity: 0.25; }
-      71%, 100% { opacity: 1; }
-    }
-
-    .question-text {
-      margin-top: 0.35rem;
-      font-size: 0.85rem;
-      color: var(--text-soft);
-    }
-
-    .player-token {
-      position: absolute;
-      width: 90px;
-      max-width: 28vw;
-      padding: 0.35rem 0.4rem;
-      border-radius: 999px;
-      background: rgba(15,23,42,0.92);
-      border: 1px solid rgba(148,163,184,0.7);
-      font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.15rem;
-      transition: transform 0.1s ease, opacity 0.2s ease, background 0.2s ease;
-    }
-
-    .player-token.greyed {
-      opacity: 0.35;
-      background: rgba(15,23,42,0.5);
-    }
-
-    .player-token .name {
-      font-weight: 600;
-    }
-
-    .player-token .score {
-      font-size: 0.7rem;
-      color: var(--text-soft);
-    }
-
-    .player-token .rank-tag {
-      font-size: 0.65rem;
-      padding: 0.05rem 0.35rem;
-      border-radius: 999px;
-      background: rgba(251,191,36,0.15);
-      color: #facc15;
-    }
-
-    /* Cards area */
-    .cards-panel {
-      margin-top: 0.75rem;
-      border-radius: 18px;
-      border: 1px solid var(--border-soft);
-      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
-      padding: 0.6rem 0.75rem;
-      max-height: 320px;
-      overflow-y: auto;
-    }
-
-    .cards-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .cards-header h3 {
-      font-size: 0.9rem;
-    }
-
-    .player-cards-row {
-      margin-bottom: 0.5rem;
-      padding: 0.45rem;
-      border-radius: 12px;
-      background: rgba(15,23,42,0.8);
-      border: 1px solid rgba(31,41,55,0.95);
-    }
-
-    .player-cards-row-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .player-cards-row-header .name {
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .player-cards-row-header .meta {
-      font-size: 0.75rem;
-      color: var(--text-soft);
-      display: flex;
-      gap: 0.4rem;
-      align-items: center;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 0.35rem;
-    }
-
-    .card-btn {
-      width: 100%;
-      text-align: left;
-      justify-content: flex-start;
-      background: rgba(15,23,42,0.95);
-      border-radius: 10px;
-      border: 1px solid rgba(55,65,81,0.9);
-      padding: 0.45rem 0.55rem;
-      font-size: 0.8rem;
-      white-space: normal;
-      line-height: 1.3;
-    }
-
-    .card-btn.correct {
-      border-color: rgba(74,222,128,0.95);
-      background: rgba(22,163,74,0.15);
-    }
-
-    .card-btn.wrong {
-      border-color: rgba(248,113,113,0.9);
-      background: rgba(127,29,29,0.3);
-    }
-
-    .card-btn.used {
-      opacity: 0.45;
-      pointer-events: none;
-    }
-
-    /* Scoreboard */
-    .scoreboard {
-      margin-top: 0.5rem;
-      border-radius: 16px;
-      border: 1px solid var(--border-soft);
-      background: rgba(15,23,42,0.9);
-      padding: 0.5rem 0.6rem;
-    }
-
-    .scoreboard h3 {
-      font-size: 0.9rem;
-      margin-bottom: 0.3rem;
-    }
-
-    .score-row {
-      display: grid;
-      grid-template-columns: 1.4fr 0.7fr 0.9fr 1.1fr;
-      gap: 0.3rem;
+    #log {
       font-size: 0.78rem;
-      padding: 0.25rem 0.35rem;
-      border-radius: 10px;
-    }
-
-    .score-row:nth-child(odd) {
-      background: rgba(15,23,42,0.9);
-    }
-
-    .score-row.header {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-soft);
-      background: none;
-      padding-top: 0;
-      padding-bottom: 0.15rem;
-    }
-
-    .score-row .name {
-      font-weight: 500;
-    }
-
-    .score-positive {
-      color: #bbf7d0;
-    }
-
-    .score-negative {
-      color: #fecaca;
-    }
-
-    /* Modal overlay */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,0.85);
-      backdrop-filter: blur(6px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal {
-      background: #020617;
-      border-radius: 20px;
-      border: 1px solid rgba(55,65,81,0.9);
-      padding: 1rem 1rem 0.9rem;
-      max-width: 560px;
-      width: 94vw;
-      box-shadow: 0 30px 80px rgba(15,23,42,0.95);
-      max-height: 90vh;
+      white-space: pre-wrap;
+      max-height: 200px;
       overflow-y: auto;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      padding: 0.5rem;
+      background: #020617;
     }
-
-    .modal h2 {
-      font-size: 1rem;
-      margin-bottom: 0.3rem;
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .divider {
-      height: 1px;
-      background: rgba(31,41,55,0.9);
-      margin: 0.45rem 0;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 1rem;
-      right: 1rem;
-      background: rgba(15,23,42,0.95);
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8rem;
-      display: none;
-      z-index: 999;
-    }
-
-    .toast span.label {
-      color: var(--accent);
-      margin-right: 0.35rem;
-      text-transform: uppercase;
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-    }
-
-    @media (max-width: 768px) {
-      .table-circle {
-        width: 320px;
-        height: 320px;
-      }
-      .verse-center {
-        inset: 20%;
-      }
+    #question, #verseRef, #verseText {
+      margin: 0.15rem 0;
     }
   </style>
 </head>
 <body>
-<div id="app">
-  <!-- Lobby / setup -->
-  <div id="lobby-panel" class="panel">
-    <div class="panel-header">
-      <div>
-        <h1>Bible Verse Round Table</h1>
-        <div class="tag">Multiplayer quiz · Bible verses · Speed & accuracy</div>
-      </div>
-      <div class="pill">
-        <span class="dot"></span>
-        <span id="lobby-status">Waiting for players…</span>
-      </div>
-    </div>
-
-    <div class="divider"></div>
+  <div class="panel">
+    <h1>Bible Round Table – Realtime Test</h1>
+    <p style="font-size:0.9rem;color:#9ca3af">
+      This page tests the full pipeline: Google Sheets → Apps Script → Firebase → multiple browsers.
+      <br>Use one browser to <strong>Create Game</strong>, then another to <strong>Join</strong> with the same Game ID.
+    </p>
 
     <div class="row">
-      <div class="grow">
-        <h2>Add Player</h2>
-        <label for="firstName">First name (max 15 chars)</label>
-        <input id="firstName" type="text" maxlength="15" placeholder="e.g. John">
-        <label for="lastName">Last name (max 15 chars)</label>
-        <input id="lastName" type="text" maxlength="15" placeholder="e.g. Smith">
-        <button class="primary" style="margin-top:0.5rem" id="btn-add-player">Add Player</button>
-      </div>
-
-      <div class="grow">
-        <h2>Add Computer Player</h2>
-        <label for="cpuDifficulty">Difficulty</label>
-        <select id="cpuDifficulty">
-          <option value="easy">Easy (5–8s)</option>
-          <option value="medium">Medium (4–6s)</option>
-          <option value="hard">Hard (3–5s)</option>
-          <option value="insane">Insane (0–3s)</option>
-        </select>
-        <button style="margin-top:0.5rem" id="btn-add-cpu">Add CPU</button>
-
-        <div style="margin-top:0.65rem">
-          <h3>Game Mode</h3>
-          <label><input type="radio" name="gameMode" value="3" checked> 3 rounds</label><br>
-          <label><input type="radio" name="gameMode" value="5"> 5 rounds</label><br>
-          <label><input type="radio" name="gameMode" value="10"> 10 rounds</label><br>
-          <label><input type="radio" name="gameMode" value="all"> All questions</label>
+      <div class="box">
+        <div class="section-title">1. Player Info</div>
+        <div class="field">
+          <div class="label">First name</div>
+          <input type="text" id="firstName" placeholder="e.g. John">
+        </div>
+        <div class="field">
+          <div class="label">Last name</div>
+          <input type="text" id="lastName" placeholder="e.g. Kim">
         </div>
       </div>
 
-      <div class="grow">
-        <h2>Admin & Start</h2>
-        <p style="font-size:0.8rem;color:var(--text-soft);margin-top:0">
-          1. Add all players.<br>
-          2. Click a player to choose the <strong>admin</strong> (decided by majority offline).<br>
-          3. Admin clicks <strong>Start Game</strong>.
-        </p>
-        <div id="admin-display" style="font-size:0.85rem;margin-top:0.4rem;color:#a5b4fc;">
-          No admin selected yet.
+      <div class="box">
+        <div class="section-title">2. Create Game (become Admin)</div>
+        <div class="field">
+          <div class="label">Sheets API URL (Apps Script Web App)</div>
+          <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXX/exec">
         </div>
-        <button id="btn-start" class="primary" style="margin-top:0.6rem" disabled>Start Game</button>
-        <button id="btn-clear-saved" class="small danger" style="margin-top:0.4rem">Clear Saved Game</button>
+        <button id="btnCreate">Create Game</button>
+        <div class="field" style="margin-top:0.5rem">
+          <div class="label">Created Game ID</div>
+          <div class="mono" id="createdGameId">–</div>
+        </div>
+      </div>
 
-        <div id="resume-box" style="margin-top:0.9rem;display:none;font-size:0.8rem;">
-          <strong>Saved game found.</strong><br>
-          <button id="btn-resume" class="small primary">Resume Saved Game</button>
+      <div class="box">
+        <div class="section-title">3. Join Existing Game</div>
+        <div class="field">
+          <div class="label">Game ID</div>
+          <input type="text" id="joinGameId" placeholder="Paste Game ID">
+        </div>
+        <button class="secondary" id="btnJoin">Join Game</button>
+        <div class="field" style="margin-top:0.5rem">
+          <div class="label">Current Connection</div>
+          <div class="mono" id="status">Not connected</div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:0.6rem">
-      <h2>Players</h2>
-      <div id="player-list" class="player-list"></div>
-    </div>
-  </div>
+    <hr style="margin:1rem 0;border:0;border-top:1px solid #1f2937;">
 
-  <!-- Game Area -->
-  <div id="game-area" class="panel">
-    <div class="top-bar">
-      <div>
-        <div class="round-info" id="round-info"></div>
-        <div style="font-size:0.75rem;color:var(--text-soft);" id="admin-label"></div>
-      </div>
-      <div class="timer" id="timer">00.00s</div>
-      <div>
-        <button id="btn-end-round" class="small">End Round</button>
-        <button id="btn-exit-game" class="small danger">Exit</button>
-      </div>
-    </div>
+    <div class="row">
+      <div class="box">
+        <div class="section-title">Shared Game State (first question)</div>
+        <div class="label">Game ID</div>
+        <div class="mono" id="currentGameId">–</div>
 
-    <div class="verse-circle-wrapper">
-      <div class="table-circle" id="table-circle">
-        <div class="verse-center">
-          <div class="verse-ref verse-blink" id="verse-ref">Loading verse…</div>
-          <div class="verse-text verse-blink" id="verse-text">Please wait.</div>
-          <div class="question-text" id="question-text"></div>
-        </div>
-        <!-- Player tokens dynamically inserted here -->
-      </div>
-    </div>
+        <div class="label" style="margin-top:0.4rem">Verse reference</div>
+        <div id="verseRef">–</div>
 
-    <div class="cards-panel">
-      <div class="cards-header">
-        <h3>Player Cards (click a card to answer)</h3>
-        <div style="font-size:0.75rem;color:var(--text-soft)">
-          Correct: +points by rank · Wrong: -1, -2, -4, … (per round)
-        </div>
-      </div>
-      <div id="cards-container"></div>
-    </div>
+        <div class="label" style="margin-top:0.4rem">Verse text</div>
+        <div id="verseText">–</div>
 
-    <div class="scoreboard">
-      <h3>Scoreboard (current round ranking)</h3>
-      <div class="score-row header">
-        <div>Player</div>
-        <div>Round pts</div>
-        <div>Penalty</div>
-        <div>Total score</div>
+        <div class="label" style="margin-top:0.4rem">Question</div>
+        <div id="question">–</div>
       </div>
-      <div id="scoreboard-rows"></div>
-    </div>
-  </div>
 
-  <!-- Round summary modal -->
-  <div id="modal-backdrop" class="modal-backdrop">
-    <div class="modal">
-      <h2 id="modal-title">Round Summary</h2>
-      <div id="modal-body"></div>
-      <div class="modal-footer">
-        <button id="btn-modal-exit" class="danger small">Exit</button>
-        <button id="btn-modal-save" class="small">Save & Exit</button>
-        <button id="btn-modal-next" class="primary small">Next Round</button>
+      <div class="box">
+        <div class="section-title">Debug Log</div>
+        <div id="log"></div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">
-    <span class="label">INFO</span>
-    <span id="toast-msg"></span>
-  </div>
-</div>
-
-<script>
-/**
- * CONFIG
- * - SHEETS_WEBAPP_URL: optional Google Apps Script web-app endpoint
- *   for logging & loading questions. Leave empty to use local sample questions.
- */
-const CONFIG = {
-  SHEETS_WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbzOy5BJ9VbqUlujW2Hg4BbJM6KNdeM_LMjq5EHtafPDPuJI34NAEmDzxgbkvrSHkiPp/exec'
-  STORAGE_KEY: 'bible_round_table_game_v1'
-};
-
-/** Basic sample data (replace later with Google Sheets) */
-const LOCAL_QUESTIONS = [
-  {
-    id: 'Q1',
-    verseRef: 'John 3:16 (NIV)',
-    verseText: 'For God so loved the world that he gave his one and only Son...',
-    question: 'Who loved the world so much that He gave His one and only Son?',
-    correctAnswer: 'God',
-    wrongAnswers: ['Paul', 'Peter', 'I don\'t remember', 'The disciples', 'The angels']
-  },
-  {
-    id: 'Q2',
-    verseRef: 'Psalm 23:1 (NIV)',
-    verseText: 'The Lord is my shepherd, I lack nothing.',
-    question: 'In Psalm 23:1, who is my shepherd?',
-    correctAnswer: 'The Lord',
-    wrongAnswers: ['Moses', 'David', 'No one', 'My friends', 'The pastor']
-  },
-  {
-    id: 'Q3',
-    verseRef: 'Romans 8:28 (NIV)',
-    verseText: 'And we know that in all things God works for the good of those who love him...',
-    question: 'According to Romans 8:28, who does God work for the good of?',
-    correctAnswer: 'Those who love him',
-    wrongAnswers: ['Everyone, no matter what', 'Only pastors', 'Angels', 'Those who never sin']
-  }
-];
-
-/** Global state */
-let game = {
-  players: [],           // {id, firstName, lastName, isCpu, difficulty, score, totalWrongPenalty, totalCorrectTime}
-  adminId: null,
-  questions: [],
-  settings: {
-    totalRounds: 3
-  },
-  currentRound: 0,
-  currentQuestion: null,
-  roundState: null,      // { startTime, timerInterval, playerCards, answers, rankingComputed }
-  savedFromStorage: false
-};
-
-/** Utility functions */
-function showToast(msg, ms = 2000) {
-  const toast = document.getElementById('toast');
-  document.getElementById('toast-msg').innerText = msg;
-  toast.style.display = 'inline-flex';
-  setTimeout(() => { toast.style.display = 'none'; }, ms);
-}
-
-function saveGameToStorage() {
-  try {
-    const payload = JSON.stringify(game);
-    localStorage.setItem(CONFIG.STORAGE_KEY, payload);
-    showToast('Game saved locally');
-  } catch (e) {
-    console.error(e);
-    showToast('Could not save game');
-  }
-}
-
-function clearSavedGame() {
-  localStorage.removeItem(CONFIG.STORAGE_KEY);
-  document.getElementById('resume-box').style.display = 'none';
-  showToast('Saved game cleared');
-}
-
-function maybeLoadSavedGame() {
-  const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.players) && parsed.players.length > 0) {
-      game = parsed;
-      game.savedFromStorage = true;
-      document.getElementById('resume-box').style.display = 'block';
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-/** ID helper */
-function uuid() {
-  return 'p-' + Math.random().toString(36).substring(2, 10);
-}
-
-/** Game setup / lobby rendering **/
-function renderPlayerList() {
-  const container = document.getElementById('player-list');
-  container.innerHTML = '';
-  if (game.players.length === 0) {
-    container.innerHTML = '<div style="font-size:0.8rem;color:var(--text-soft);">No players yet.</div>';
-    document.getElementById('lobby-status').innerText = 'Add at least 1 player.';
-    document.getElementById('btn-start').disabled = true;
-    document.getElementById('admin-display').innerText = 'No admin selected yet.';
-    return;
-  }
-
-  game.players.forEach(player => {
-    const row = document.createElement('div');
-    row.className = 'player-row';
-    row.dataset.id = player.id;
-
-    const left = document.createElement('div');
-    const name = document.createElement('div');
-    name.className = 'player-name';
-    name.textContent = `${player.firstName} ${player.lastName}`;
-    const meta = document.createElement('div');
-    meta.className = 'player-meta';
-    if (player.isCpu) {
-      const tag = document.createElement('span');
-      tag.className = 'cpu-tag';
-      tag.textContent = `CPU · ${player.difficulty}`;
-      meta.appendChild(tag);
-    }
-    if (player.id === game.adminId) {
-      const tag = document.createElement('span');
-      tag.className = 'admin-tag';
-      tag.textContent = 'Admin';
-      meta.appendChild(tag);
-    }
-    left.appendChild(name);
-    left.appendChild(meta);
-
-    const right = document.createElement('div');
-    right.style.display = 'flex';
-    right.style.gap = '0.3rem';
-
-    const btnAdmin = document.createElement('button');
-    btnAdmin.className = 'small';
-    btnAdmin.textContent = 'Make Admin';
-    btnAdmin.onclick = () => {
-      game.adminId = player.id;
-      renderPlayerList();
-      updateAdminDisplay();
+  <!-- Firebase + app logic -->
+  <script type="module">
+    /************************************************
+     * 1) Firebase setup – paste your config here
+     ************************************************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
+      authDomain: "christian-roundtable.firebaseapp.com",
+      projectId: "christian-roundtable",
+      storageBucket: "christian-roundtable.firebasestorage.app",
+      messagingSenderId: "981074913898",
+      appId: "1:981074913898:web:52183899c18e5cd0aff813",
+      measurementId: "G-JT29F5HZGE"
     };
 
-    const btnRemove = document.createElement('button');
-    btnRemove.className = 'small danger';
-    btnRemove.textContent = 'Remove';
-    btnRemove.onclick = () => {
-      game.players = game.players.filter(p => p.id !== player.id);
-      if (game.adminId === player.id) game.adminId = null;
-      renderPlayerList();
-      updateAdminDisplay();
-    };
+    // Import Firebase modules from CDN (modular v9+)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      setDoc,
+      getDoc,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-    right.appendChild(btnAdmin);
-    right.appendChild(btnRemove);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    row.appendChild(left);
-    row.appendChild(right);
-    container.appendChild(row);
-  });
-
-  document.getElementById('lobby-status').innerText =
-    'Choose an admin and click Start Game.';
-  document.getElementById('btn-start').disabled = !game.adminId;
-}
-
-function updateAdminDisplay() {
-  const label = document.getElementById('admin-display');
-  const btnStart = document.getElementById('btn-start');
-  if (!game.adminId) {
-    label.textContent = 'No admin selected yet.';
-    btnStart.disabled = true;
-    return;
-  }
-  const admin = game.players.find(p => p.id === game.adminId);
-  if (!admin) {
-    label.textContent = 'No admin selected yet.';
-    btnStart.disabled = true;
-    return;
-  }
-  label.textContent = `Admin: ${admin.firstName} ${admin.lastName}`;
-  btnStart.disabled = false;
-}
-
-/** Question loading */
-async function loadQuestions() {
-  // If you set SHEETS_WEBAPP_URL, you can fetch from Apps Script instead
-  if (!CONFIG.SHEETS_WEBAPP_URL) {
-    game.questions = LOCAL_QUESTIONS;
-    return;
-  }
-  try {
-    const url = CONFIG.SHEETS_WEBAPP_URL + '?action=getQuestions';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Bad response');
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      game.questions = data;
-    } else {
-      console.warn('Empty questions from server, using local ones');
-      game.questions = LOCAL_QUESTIONS;
-    }
-  } catch (e) {
-    console.error(e);
-    game.questions = LOCAL_QUESTIONS;
-  }
-}
-
-/** Game start */
-async function startNewGame() {
-  await loadQuestions();
-  if (!game.questions || game.questions.length === 0) {
-    alert('No questions available.');
-    return;
-  }
-
-  // Game mode
-  const modeRadio = document.querySelector('input[name="gameMode"]:checked');
-  let rounds = 3;
-  if (modeRadio.value === '5') rounds = 5;
-  else if (modeRadio.value === '10') rounds = 10;
-  else if (modeRadio.value === 'all') rounds = game.questions.length;
-  game.settings.totalRounds = rounds;
-
-  // Reset stats
-  game.players.forEach(p => {
-    p.score = 0;
-    p.totalWrongPenalty = 0;
-    p.totalCorrectTime = 0;
-  });
-  game.currentRound = 0;
-  game.currentQuestion = null;
-  game.roundState = null;
-
-  // Switch UI
-  document.getElementById('lobby-panel').style.display = 'none';
-  document.getElementById('game-area').style.display = 'block';
-
-  const admin = game.players.find(p => p.id === game.adminId);
-  document.getElementById('admin-label').textContent =
-    admin ? `Admin: ${admin.firstName} ${admin.lastName}` : '';
-
-  showToast('Game started');
-  nextRound();
-}
-
-/** Round utilities */
-function pickQuestionForRound() {
-  if (!game.questions || game.questions.length === 0) return null;
-  const usedIds = new Set((game.usedQuestionIds || []));
-  const available = game.questions.filter(q => !usedIds.has(q.id));
-  let chosen;
-  if (available.length === 0) {
-    // All used, fallback
-    chosen = game.questions[Math.floor(Math.random() * game.questions.length)];
-  } else {
-    chosen = available[Math.floor(Math.random() * available.length)];
-  }
-  game.usedQuestionIds = game.usedQuestionIds || [];
-  game.usedQuestionIds.push(chosen.id);
-  return chosen;
-}
-
-function shuffle(array) {
-  const arr = array.slice();
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function setupRoundState(question) {
-  const startTime = Date.now();
-  const playerCards = {};
-  const answers = {};
-  const playerHasRealAnswer = {};
-
-  const wrongPool = question.wrongAnswers || [];
-
-  // Ensure at least one player has real correct answer and at least one has "no answer"
-  const totalPlayers = game.players.length;
-  const atLeastOneRealIndex = Math.floor(Math.random() * totalPlayers);
-  const atLeastOneNoIndex = (atLeastOneRealIndex + 1) % totalPlayers;
-
-  game.players.forEach((p, idx) => {
-    let hasReal;
-    if (idx === atLeastOneRealIndex) hasReal = true;
-    else if (idx === atLeastOneNoIndex) hasReal = false;
-    else hasReal = Math.random() < 0.5;
-
-    const wrongsShuffled = shuffle(wrongPool);
-    const choices = [];
-
-    if (hasReal) {
-      choices.push(question.correctAnswer);
-      for (let i = 0; i < wrongsShuffled.length && choices.length < 4; i++) {
-        if (wrongsShuffled[i] === question.correctAnswer) continue;
-        choices.push(wrongsShuffled[i]);
-      }
-      while (choices.length < 4) {
-        choices.push('I don\'t have the answer');
-      }
-    } else {
-      choices.push('I don\'t have the answer');
-      for (let i = 0; i < wrongsShuffled.length && choices.length < 4; i++) {
-        if (wrongsShuffled[i] === question.correctAnswer) continue;
-        if (wrongsShuffled[i] === 'I don\'t have the answer') continue;
-        choices.push(wrongsShuffled[i]);
-      }
-      while (choices.length < 4) {
-        choices.push('N/A');
-      }
+    /************************************************
+     * 2) Small helpers
+     ************************************************/
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent += msg + "\n";
+      el.scrollTop = el.scrollHeight;
     }
 
-    playerCards[p.id] = shuffle(choices);
-    answers[p.id] = {
-      answeredCorrectly: false,
-      correctTimeMs: null,
-      wrongAttempts: 0,
-      penalty: 0,
-      clickedCards: {},
-      rank: null,
-      roundPoints: 0
-    };
-    playerHasRealAnswer[p.id] = hasReal;
-  });
-
-  game.roundState = {
-    startTime,
-    timerInterval: null,
-    playerCards,
-    answers,
-    playerHasRealAnswer
-  };
-}
-
-/** Timer rendering */
-function startTimer() {
-  const timerEl = document.getElementById('timer');
-  if (game.roundState.timerInterval) {
-    clearInterval(game.roundState.timerInterval);
-  }
-  game.roundState.timerInterval = setInterval(() => {
-    const elapsed = (Date.now() - game.roundState.startTime) / 1000;
-    timerEl.textContent = elapsed.toFixed(2) + 's';
-  }, 60);
-}
-
-function flashTimer() {
-  const timerEl = document.getElementById('timer');
-  timerEl.classList.remove('timer-pulse');
-  // force reflow
-  void timerEl.offsetWidth;
-  timerEl.classList.add('timer-pulse');
-}
-
-/** Player tokens around circle */
-function renderPlayerTokens() {
-  const circle = document.getElementById('table-circle');
-  const oldTokens = circle.querySelectorAll('.player-token');
-  oldTokens.forEach(t => t.remove());
-
-  const n = game.players.length;
-  const radius = 47; // percent offset
-
-  game.players.forEach((p, idx) => {
-    const angle = (2 * Math.PI * idx) / n - Math.PI / 2;
-    const x = 50 + radius * Math.cos(angle);
-    const y = 50 + radius * Math.sin(angle);
-
-    const token = document.createElement('div');
-    token.className = 'player-token';
-    token.dataset.id = p.id;
-    token.style.left = x + '%';
-    token.style.top = y + '%';
-    token.style.transform = 'translate(-50%, -50%)';
-
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = `${p.firstName}`;
-
-    const score = document.createElement('div');
-    score.className = 'score';
-    score.textContent = `Score: ${p.score || 0}`;
-
-    token.appendChild(name);
-    token.appendChild(score);
-
-    if (p.id === game.adminId) {
-      const rankTag = document.createElement('div');
-      rankTag.className = 'rank-tag';
-      rankTag.textContent = 'Admin';
-      token.appendChild(rankTag);
+    function getPlayerName() {
+      const f = document.getElementById('firstName').value.trim() || "Anon";
+      const l = document.getElementById('lastName').value.trim() || "Player";
+      return { firstName: f, lastName: l };
     }
 
-    circle.appendChild(token);
-  });
-}
+    let currentGameDocRef = null;
+    let unsubscribeGame = null;
 
-function greyOutPlayerToken(playerId) {
-  const token = document.querySelector(`.player-token[data-id="${playerId}"]`);
-  if (token) {
-    token.classList.add('greyed');
-  }
-}
+    /************************************************
+     * 3) Create Game – fetch questions from Sheets,
+     *    store the list in Firestore
+     ************************************************/
+    async function handleCreate() {
+      const scriptUrl = document.getElementById('scriptUrl').value.trim();
+      if (!scriptUrl) {
+        alert("Enter your Apps Script Web App URL first.");
+        return;
+      }
 
-/** Cards rendering */
-function renderCards() {
-  const container = document.getElementById('cards-container');
-  container.innerHTML = '';
+      const { firstName, lastName } = getPlayerName();
+      log("Creating game as " + firstName + " " + lastName + "...");
 
-  const roundState = game.roundState;
-  if (!roundState) return;
+      // 1) Fetch questions from Apps Script API
+      try {
+        const res = await fetch(scriptUrl + "?action=getQuestions");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const questions = await res.json();
+        log("Loaded " + questions.length + " questions from Sheets.");
 
-  game.players.forEach(p => {
-    const row = document.createElement('div');
-    row.className = 'player-cards-row';
-
-    const header = document.createElement('div');
-    header.className = 'player-cards-row-header';
-
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = `${p.firstName} ${p.lastName}${p.isCpu ? ' (CPU)' : ''}`;
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    meta.innerHTML =
-      `<span>Score: ${p.score || 0}</span>` +
-      `<span>| Wrong this round: ${roundState.answers[p.id].wrongAttempts}</span>`;
-
-    header.appendChild(name);
-    header.appendChild(meta);
-
-    const grid = document.createElement('div');
-    grid.className = 'cards-grid';
-
-    const cards = roundState.playerCards[p.id] || [];
-    cards.forEach((text, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'card-btn';
-      btn.textContent = text;
-      btn.dataset.playerId = p.id;
-      btn.dataset.index = idx;
-
-      if (roundState.answers[p.id].clickedCards[idx]) {
-        btn.classList.add('used');
-        if (roundState.answers[p.id].clickedCards[idx] === 'correct') {
-          btn.classList.add('correct');
-        } else {
-          btn.classList.add('wrong');
+        if (!Array.isArray(questions) || questions.length === 0) {
+          alert("No questions returned from Sheets.");
+          return;
         }
+
+        // 2) Create a game doc in Firestore
+        const gamesCol = collection(db, "games");
+        const gameDoc = await addDoc(gamesCol, {
+          createdAt: serverTimestamp(),
+          status: "lobby",
+          adminName: firstName + " " + lastName,
+          currentQuestionIndex: 0,
+          questions: questions   // store whole list for now
+        });
+
+        const gameId = gameDoc.id;
+        document.getElementById('createdGameId').textContent = gameId;
+        document.getElementById('joinGameId').value = gameId;
+        document.getElementById('status').textContent = "Created game " + gameId;
+        log("Game created with ID: " + gameId);
+
+        subscribeToGame(gameId);
+      } catch (err) {
+        console.error(err);
+        log("Error creating game: " + err.message);
+        alert("Error creating game; see log.");
+      }
+    }
+
+    /************************************************
+     * 4) Join existing game
+     ************************************************/
+    async function handleJoin() {
+      const gameId = document.getElementById('joinGameId').value.trim();
+      if (!gameId) {
+        alert("Enter a Game ID to join.");
+        return;
+      }
+      subscribeToGame(gameId);
+    }
+
+    /************************************************
+     * 5) Subscribe in realtime to a game document
+     ************************************************/
+    function subscribeToGame(gameId) {
+      if (unsubscribeGame) {
+        unsubscribeGame();
+        unsubscribeGame = null;
       }
 
-      if (roundState.answers[p.id].answeredCorrectly) {
-        btn.classList.add('used');
-      }
+      const gameRef = doc(db, "games", gameId);
+      currentGameDocRef = gameRef;
+      document.getElementById('currentGameId').textContent = gameId;
+      document.getElementById('status').textContent = "Connecting to game " + gameId + "...";
 
-      btn.onclick = () => handleCardClick(p, idx, text, btn);
-      grid.appendChild(btn);
-    });
+      unsubscribeGame = onSnapshot(gameRef, (snap) => {
+        if (!snap.exists()) {
+          document.getElementById('status').textContent = "Game not found.";
+          log("Game " + gameId + " does not exist.");
+          return;
+        }
+        const data = snap.data();
+        document.getElementById('status').textContent = "Connected to game " + gameId;
 
-    row.appendChild(header);
-    row.appendChild(grid);
-    container.appendChild(row);
-  });
-}
+        const idx = data.currentQuestionIndex || 0;
+        const qList = data.questions || [];
+        const q = qList[idx] || null;
 
-/** Scoreboard rendering */
-function renderScoreboard() {
-  const container = document.getElementById('scoreboard-rows');
-  container.innerHTML = '';
-
-  const roundState = game.roundState;
-  if (!roundState) return;
-
-  // Build ranking by correct time
-  const playersData = game.players.map(p => {
-    const ans = roundState.answers[p.id];
-    return {
-      player: p,
-      ans,
-      totalScore: p.score || 0
-    };
-  });
-
-  // Display sorted by totalScore desc
-  playersData.sort((a, b) => b.totalScore - a.totalScore);
-
-  playersData.forEach(row => {
-    const el = document.createElement('div');
-    el.className = 'score-row';
-
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = `${row.player.firstName} ${row.player.lastName}`;
-
-    const roundPts = document.createElement('div');
-    const rp = row.ans.roundPoints || 0;
-    roundPts.textContent = rp;
-    roundPts.className = rp >= 0 ? 'score-positive' : 'score-negative';
-
-    const penalty = document.createElement('div');
-    const pen = row.ans.penalty || 0;
-    penalty.textContent = pen;
-    penalty.className = pen <= 0 ? 'score-negative' : 'score-positive';
-
-    const total = document.createElement('div');
-    const ts = row.player.score || 0;
-    total.textContent = ts;
-    total.className = ts >= 0 ? 'score-positive' : 'score-negative';
-
-    el.appendChild(name);
-    el.appendChild(roundPts);
-    el.appendChild(penalty);
-    el.appendChild(total);
-
-    container.appendChild(el);
-  });
-}
-
-/** Handle a card click (player answer) */
-function handleCardClick(player, idx, text, btnEl) {
-  const q = game.currentQuestion;
-  const rs = game.roundState;
-  if (!q || !rs) return;
-  const ans = rs.answers[player.id];
-
-  // If already answered correctly, ignore
-  if (ans.answeredCorrectly) return;
-
-  const elapsedMs = Date.now() - rs.startTime;
-  flashTimer();
-
-  const hasReal = rs.playerHasRealAnswer[player.id];
-  let isCorrect;
-
-  if (hasReal) {
-    isCorrect = (text === q.correctAnswer);
-  } else {
-    isCorrect = (text === "I don't have the answer");
-  }
-
-  if (isCorrect) {
-    ans.answeredCorrectly = true;
-    ans.correctTimeMs = elapsedMs;
-    rs.answers[player.id].clickedCards[idx] = 'correct';
-    btnEl.classList.add('correct', 'used');
-    greyOutPlayerToken(player.id);
-    computeRanksAndUpdateScores();
-  } else {
-    ans.wrongAttempts++;
-    const penaltyThisClick = -Math.pow(2, ans.wrongAttempts - 1);
-    ans.penalty += penaltyThisClick;
-    rs.answers[player.id].clickedCards[idx] = 'wrong';
-
-    // Apply penalty immediately
-    player.score = (player.score || 0) + penaltyThisClick;
-    player.totalWrongPenalty = (player.totalWrongPenalty || 0) + penaltyThisClick;
-
-    btnEl.classList.add('wrong', 'used');
-  }
-
-  renderCards();
-  renderScoreboard();
-}
-
-/** Compute ranking, assign round points */
-function computeRanksAndUpdateScores() {
-  const rs = game.roundState;
-  const rankings = [];
-
-  game.players.forEach(p => {
-    const ans = rs.answers[p.id];
-    if (ans.answeredCorrectly && ans.correctTimeMs != null) {
-      rankings.push({
-        player: p,
-        time: ans.correctTimeMs
+        if (q) {
+          document.getElementById('verseRef').textContent = q.verseRef || "–";
+          document.getElementById('verseText').textContent = q.verseText || "–";
+          document.getElementById('question').textContent = q.question || "–";
+          log("Showing question #" + (idx + 1) + " (" + (q.id || "no id") + ")");
+        } else {
+          document.getElementById('verseRef').textContent = "–";
+          document.getElementById('verseText').textContent = "–";
+          document.getElementById('question').textContent = "No question at this index.";
+          log("No question at index " + idx);
+        }
+      }, (err) => {
+        console.error(err);
+        document.getElementById('status').textContent = "Error listening to game.";
+        log("onSnapshot error: " + err.message);
       });
     }
-  });
 
-  rankings.sort((a, b) => a.time - b.time);
-
-  const rankPointsTable = [10, 5, 3, 1, 1]; // 6th+ = 0
-  rankings.forEach((entry, idx) => {
-    const points = rankPointsTable[idx] || 0;
-    const ans = rs.answers[entry.player.id];
-    ans.rank = idx + 1;
-    ans.roundPoints = points + (ans.penalty || 0); // include penalty for display
-  });
-
-  // If only one human player, we still record time but points table stands.
-  rankings.forEach(entry => {
-    const p = entry.player;
-    const ans = rs.answers[p.id];
-    const base = rankPointsTable[(ans.rank || 0) - 1] || 0;
-    const penalty = ans.penalty || 0;
-    const delta = base + penalty;
-
-    p.score = (p.score || 0) + base; // we already applied penalty when wrong clicked
-    p.totalCorrectTime = (p.totalCorrectTime || 0) + ans.correctTimeMs;
-  });
-
-  // Update tokens score text
-  renderPlayerTokens();
-}
-
-/** CPU players */
-function scheduleCpuMoves() {
-  const rs = game.roundState;
-  const q = game.currentQuestion;
-  if (!rs || !q) return;
-
-  game.players.forEach(p => {
-    if (!p.isCpu) return;
-
-    let minDelay, maxDelay;
-    switch (p.difficulty) {
-      case 'easy':
-        minDelay = 5000; maxDelay = 8000; break;
-      case 'medium':
-        minDelay = 4000; maxDelay = 6000; break;
-      case 'hard':
-        minDelay = 3000; maxDelay = 5000; break;
-      case 'insane':
-        minDelay = 0;    maxDelay = 3000; break;
-      default:
-        minDelay = 4000; maxDelay = 6000;
-    }
-
-    const delay = minDelay + Math.random() * (maxDelay - minDelay);
-
-    setTimeout(() => {
-      const ans = rs.answers[p.id];
-      if (!game.roundState || ans.answeredCorrectly) return;
-
-      const cards = rs.playerCards[p.id];
-      if (!cards || cards.length === 0) return;
-
-      const hasReal = rs.playerHasRealAnswer[p.id];
-      let chosenIndex;
-
-      if (p.difficulty === 'easy') {
-        // random choice
-        chosenIndex = Math.floor(Math.random() * cards.length);
-      } else if (p.difficulty === 'medium') {
-        // 50% chance correct
-        if (Math.random() < 0.5) {
-          if (hasReal) {
-            chosenIndex = cards.indexOf(q.correctAnswer);
-          } else {
-            chosenIndex = cards.indexOf("I don't have the answer");
-          }
-          if (chosenIndex < 0) chosenIndex = Math.floor(Math.random() * cards.length);
-        } else {
-          chosenIndex = Math.floor(Math.random() * cards.length);
-        }
-      } else if (p.difficulty === 'hard') {
-        // 70% chance correct
-        if (Math.random() < 0.7) {
-          if (hasReal) {
-            chosenIndex = cards.indexOf(q.correctAnswer);
-          } else {
-            chosenIndex = cards.indexOf("I don't have the answer");
-          }
-          if (chosenIndex < 0) chosenIndex = Math.floor(Math.random() * cards.length);
-        } else {
-          chosenIndex = Math.floor(Math.random() * cards.length);
-        }
-      } else { // insane
-        // 90% chance correct
-        if (Math.random() < 0.9) {
-          if (hasReal) {
-            chosenIndex = cards.indexOf(q.correctAnswer);
-          } else {
-            chosenIndex = cards.indexOf("I don't have the answer");
-          }
-          if (chosenIndex < 0) chosenIndex = Math.floor(Math.random() * cards.length);
-        } else {
-          chosenIndex = Math.floor(Math.random() * cards.length);
-        }
-      }
-
-      const cardsPanel = document.getElementById('cards-container');
-      const btn = cardsPanel.querySelector(`.card-btn[data-player-id="${p.id}"][data-index="${chosenIndex}"]`);
-      if (btn) {
-        btn.click(); // reuse human logic
-      }
-    }, delay);
-  });
-}
-
-/** Start next round */
-function nextRound() {
-  if (game.currentRound >= game.settings.totalRounds) {
-    endGame();
-    return;
-  }
-
-  game.currentRound += 1;
-  game.currentQuestion = pickQuestionForRound();
-  const q = game.currentQuestion;
-
-  if (!q) {
-    alert('No question available.');
-    return;
-  }
-
-  document.getElementById('round-info').textContent =
-    `Round ${game.currentRound} of ${game.settings.totalRounds}`;
-
-  document.getElementById('verse-ref').textContent = q.verseRef || 'Verse';
-  document.getElementById('verse-text').textContent = q.verseText || '';
-  document.getElementById('question-text').textContent = q.question || '';
-
-  setupRoundState(q);
-  renderPlayerTokens();
-  renderCards();
-  renderScoreboard();
-  startTimer();
-  scheduleCpuMoves();
-}
-
-/** End round & show modal */
-function endRound(showPrompt = true) {
-  if (!game.roundState) return;
-
-  clearInterval(game.roundState.timerInterval);
-  game.roundState.timerInterval = null;
-
-  // Ensure ranking is computed at least once
-  computeRanksAndUpdateScores();
-  renderScoreboard();
-
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  const modalBody = document.getElementById('modal-body');
-  const modalTitle = document.getElementById('modal-title');
-
-  modalTitle.textContent = `Round ${game.currentRound} Summary`;
-  modalBody.innerHTML = '';
-
-  const table = document.createElement('div');
-  table.style.fontSize = '0.8rem';
-
-  game.players
-    .slice()
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .forEach(p => {
-      const ans = game.roundState.answers[p.id];
-
-      const line = document.createElement('div');
-      line.style.display = 'grid';
-      line.style.gridTemplateColumns = '1.6fr 0.6fr 0.7fr 0.9fr';
-      line.style.gap = '0.3rem';
-      line.style.padding = '0.25rem 0.3rem';
-      line.style.borderRadius = '10px';
-      line.style.background = 'rgba(15,23,42,0.9)';
-      line.style.marginBottom = '0.15rem';
-
-      const name = document.createElement('div');
-      name.textContent = `${p.firstName} ${p.lastName}`;
-
-      const rank = document.createElement('div');
-      rank.textContent = ans.rank ? `#${ans.rank}` : '-';
-
-      const pen = document.createElement('div');
-      pen.textContent = ans.penalty || 0;
-      pen.style.color = (ans.penalty || 0) <= 0 ? '#fecaca' : '#bbf7d0';
-
-      const total = document.createElement('div');
-      total.textContent = p.score || 0;
-      total.style.color = (p.score || 0) >= 0 ? '#bbf7d0' : '#fecaca';
-
-      line.appendChild(name);
-      line.appendChild(rank);
-      line.appendChild(pen);
-      line.appendChild(total);
-
-      table.appendChild(line);
-    });
-
-  modalBody.appendChild(table);
-
-  if (!showPrompt) return;
-  modalBackdrop.style.display = 'flex';
-}
-
-/** End game */
-function endGame() {
-  endRound(false);
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  const modalBody = document.getElementById('modal-body');
-  const modalTitle = document.getElementById('modal-title');
-
-  modalTitle.textContent = 'Game Finished – Final Results';
-
-  modalBody.innerHTML = '';
-  const summary = document.createElement('div');
-  summary.style.fontSize = '0.8rem';
-  summary.innerHTML = '<p>Final points:</p>';
-
-  game.players
-    .slice()
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .forEach((p, idx) => {
-      const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.justifyContent = 'space-between';
-      row.style.gap = '0.4rem';
-      row.style.padding = '0.25rem 0.3rem';
-      row.style.borderRadius = '999px';
-      row.style.background = 'rgba(15,23,42,0.9)';
-      row.style.marginBottom = '0.15rem';
-
-      const left = document.createElement('div');
-      left.textContent = `${idx + 1}. ${p.firstName} ${p.lastName}`;
-
-      const right = document.createElement('div');
-      right.textContent = `${p.score || 0} pts`;
-      right.style.color = (p.score || 0) >= 0 ? '#bbf7d0' : '#fecaca';
-
-      row.appendChild(left);
-      row.appendChild(right);
-      summary.appendChild(row);
-    });
-
-  const again = document.createElement('p');
-  again.style.marginTop = '0.6rem';
-  again.style.fontSize = '0.8rem';
-  again.textContent = 'Play another game? Exit to lobby and start again with the same or new players.';
-
-  modalBody.appendChild(summary);
-  modalBody.appendChild(again);
-
-  modalBackdrop.style.display = 'flex';
-
-  // Optionally log to Google Sheets
-  logGameResult();
-}
-
-/** Logging stub (Google Sheets) */
-async function logGameResult() {
-  if (!CONFIG.SHEETS_WEBAPP_URL) return; // no-op
-
-  try {
-    const payload = {
-      action: 'logGame',
-      timestamp: new Date().toISOString(),
-      totalRounds: game.settings.totalRounds,
-      players: game.players.map(p => ({
-        firstName: p.firstName,
-        lastName: p.lastName,
-        isCpu: !!p.isCpu,
-        difficulty: p.difficulty || '',
-        score: p.score || 0,
-        totalWrongPenalty: p.totalWrongPenalty || 0,
-        totalCorrectTime: p.totalCorrectTime || 0
-      }))
-    };
-
-    await fetch(CONFIG.SHEETS_WEBAPP_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (e) {
-    console.error('logGameResult error', e);
-  }
-}
-
-/** Exit to lobby */
-function exitToLobby() {
-  if (game.roundState && game.roundState.timerInterval) {
-    clearInterval(game.roundState.timerInterval);
-  }
-  document.getElementById('game-area').style.display = 'none';
-  document.getElementById('lobby-panel').style.display = 'block';
-  renderPlayerList();
-  updateAdminDisplay();
-  document.getElementById('modal-backdrop').style.display = 'none';
-}
-
-/** Event bindings */
-document.addEventListener('DOMContentLoaded', () => {
-  maybeLoadSavedGame();
-  renderPlayerList();
-  updateAdminDisplay();
-
-  document.getElementById('btn-add-player').onclick = () => {
-    const firstName = document.getElementById('firstName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    if (!firstName || !lastName) {
-      showToast('Enter both first and last name');
-      return;
-    }
-    if (firstName.length > 15 || lastName.length > 15) {
-      showToast('Max 15 characters per name');
-      return;
-    }
-    const player = {
-      id: uuid(),
-      firstName,
-      lastName,
-      isCpu: false,
-      difficulty: '',
-      score: 0,
-      totalWrongPenalty: 0,
-      totalCorrectTime: 0
-    };
-    game.players.push(player);
-    document.getElementById('firstName').value = '';
-    document.getElementById('lastName').value = '';
-    renderPlayerList();
-  };
-
-  document.getElementById('btn-add-cpu').onclick = () => {
-    const diff = document.getElementById('cpuDifficulty').value;
-    const label = diff.charAt(0).toUpperCase() + diff.slice(1);
-    const player = {
-      id: uuid(),
-      firstName: 'CPU',
-      lastName: label,
-      isCpu: true,
-      difficulty: diff,
-      score: 0,
-      totalWrongPenalty: 0,
-      totalCorrectTime: 0
-    };
-    game.players.push(player);
-    renderPlayerList();
-  };
-
-  document.getElementById('btn-start').onclick = () => {
-    if (game.players.length === 0) {
-      showToast('Add at least one player');
-      return;
-    }
-    if (!game.adminId) {
-      showToast('Choose an admin first');
-      return;
-    }
-    startNewGame();
-  };
-
-  document.getElementById('btn-clear-saved').onclick = clearSavedGame;
-  document.getElementById('btn-resume').onclick = () => {
-    if (!game || !game.players || game.players.length === 0) {
-      showToast('No valid saved game');
-      return;
-    }
-    document.getElementById('lobby-panel').style.display = 'none';
-    document.getElementById('game-area').style.display = 'block';
-    document.getElementById('admin-label').textContent =
-      game.adminId ? `Admin: ${
-        (game.players.find(p => p.id === game.adminId) || {}).firstName || ''
-      }` : '';
-    showToast('Resumed saved game');
-    // Resume means continue where state left off (if mid-round)
-    renderPlayerTokens();
-    renderCards();
-    renderScoreboard();
-    if (game.roundState && !game.roundState.timerInterval) {
-      startTimer();
-      scheduleCpuMoves();
-    }
-  };
-
-  document.getElementById('btn-end-round').onclick = () => {
-    endRound(true);
-  };
-
-  document.getElementById('btn-exit-game').onclick = () => {
-    if (confirm('Exit to lobby? Current round progress will be lost (unless you save).')) {
-      exitToLobby();
-    }
-  };
-
-  document.getElementById('btn-modal-next').onclick = () => {
-    document.getElementById('modal-backdrop').style.display = 'none';
-    nextRound();
-  };
-
-  document.getElementById('btn-modal-save').onclick = () => {
-    saveGameToStorage();
-    exitToLobby();
-  };
-
-  document.getElementById('btn-modal-exit').onclick = () => {
-    exitToLobby();
-  };
-});
-</script>
+    /************************************************
+     * 6) Wire up buttons
+     ************************************************/
+    document.getElementById('btnCreate').addEventListener('click', handleCreate);
+    document.getElementById('btnJoin').addEventListener('click', handleJoin);
+  </script>
 </body>
 </html>
