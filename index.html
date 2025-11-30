@@ -111,6 +111,12 @@
       font-size: 0.8rem;
       color: #cbd5f5;
     }
+    #gameControls {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #1f2937;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -169,7 +175,16 @@
         <div class="label">Game ID</div>
         <div class="mono" id="currentGameId">–</div>
 
-        <div class="label" style="margin-top:0.2rem">Current admin</div>
+        <div class="label" style="margin-top:0.2rem">Game status</div>
+        <div id="gameStatus">Lobby</div>
+
+        <div class="label" style="margin-top:0.2rem">Round</div>
+        <div id="roundInfo">–</div>
+
+        <div class="label" style="margin-top:0.2rem">Mode</div>
+        <div id="roundMode">–</div>
+
+        <div class="label" style="margin-top:0.3rem">Current admin</div>
         <div id="currentAdmin">–</div>
 
         <div class="label" style="margin-top:0.4rem">Verse reference</div>
@@ -212,6 +227,27 @@
             <div style="font-size:0.75rem;color:#9ca3af;margin-top:0.25rem;">
               (You are admin – this will set the player with the most votes as new admin.)
             </div>
+          </div>
+        </div>
+
+        <div id="gameControls">
+          <div class="section-title" style="font-size:0.85rem;">Game setup (admin only)</div>
+          <div class="field">
+            <div class="label">Rounds</div>
+            <select id="roundsMode">
+              <option value="3">3 rounds</option>
+              <option value="5">5 rounds</option>
+              <option value="10">10 rounds</option>
+              <option value="all">All questions</option>
+            </select>
+          </div>
+          <div class="field">
+            <button class="small" id="btnStartGame">Start game</button>
+            <button class="small secondary" id="btnNextRound">Next round</button>
+            <button class="small secondary" id="btnEndGame">End game</button>
+          </div>
+          <div style="font-size:0.75rem;color:#9ca3af;" id="gameHint">
+            Status: waiting in lobby. Choose rounds and click "Start game".
           </div>
         </div>
       </div>
@@ -288,6 +324,16 @@
     const adminVoteSelect = document.getElementById('adminVoteSelect');
     const adminVotesListEl = document.getElementById('adminVotesList');
 
+    const gameControlsEl = document.getElementById('gameControls');
+    const gameStatusEl = document.getElementById('gameStatus');
+    const roundInfoEl = document.getElementById('roundInfo');
+    const roundModeEl = document.getElementById('roundMode');
+    const gameHintEl = document.getElementById('gameHint');
+    const roundsModeSelect = document.getElementById('roundsMode');
+    const btnStartGame = document.getElementById('btnStartGame');
+    const btnNextRound = document.getElementById('btnNextRound');
+    const btnEndGame = document.getElementById('btnEndGame');
+
     /************************************************
      * 3) Player registration
      ************************************************/
@@ -317,7 +363,7 @@
     }
 
     /************************************************
-     * 4) Create Game – fetch questions + create admin player
+     * 4) Create game – fetch questions, set initial admin
      ************************************************/
     async function handleCreate() {
       const scriptUrl = document.getElementById('scriptUrl').value.trim();
@@ -347,6 +393,9 @@
         const gameDoc = await addDoc(gamesCol, {
           createdAt: serverTimestamp(),
           status: "lobby",
+          roundsMode: "3",
+          totalRounds: 3,
+          currentRound: 0,
           adminDisplayName,
           adminPlayerId,
           currentQuestionIndex: 0,
@@ -410,7 +459,7 @@
     }
 
     /************************************************
-     * 6) Subscribe to game doc (questions + admin)
+     * 6) Subscribe to game doc
      ************************************************/
     function subscribeToGame(gameId) {
       if (unsubscribeGame) {
@@ -431,6 +480,25 @@
         const adminName = data.adminDisplayName || "–";
         document.getElementById('currentAdmin').textContent = adminName;
 
+        // game status + rounds
+        const status = data.status || "lobby";
+        gameStatusEl.textContent = status === "in_progress" ? "In progress" :
+                                   status === "finished" ? "Finished" : "Lobby";
+
+        const roundsMode = data.roundsMode || "3";
+        roundModeEl.textContent = roundsMode === "all" ? "All questions" : roundsMode + " rounds";
+
+        const totalRounds = data.totalRounds || 0;
+        const currentRound = data.currentRound || 0;
+        if (status === "in_progress") {
+          roundInfoEl.textContent = "Round " + currentRound + " of " + totalRounds;
+        } else if (status === "finished") {
+          roundInfoEl.textContent = "Game finished (" + totalRounds + " rounds)";
+        } else {
+          roundInfoEl.textContent = "Not started";
+        }
+
+        // question
         const idx = data.currentQuestionIndex || 0;
         const qList = data.questions || [];
         const q = qList[idx] || null;
@@ -447,13 +515,36 @@
           log("No question at index " + idx);
         }
 
-        // also update currentIsAdmin flag here if we know adminPlayerId
+        // admin flag based on adminPlayerId
         if (data.adminPlayerId && currentPlayerId) {
           currentIsAdmin = (data.adminPlayerId === currentPlayerId);
           adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
+          gameControlsEl.style.display = currentIsAdmin ? "block" : "none";
+
           const youNameEl = document.getElementById('youName');
           if (currentPlayerDisplayName) {
             youNameEl.textContent = currentPlayerDisplayName + (currentIsAdmin ? " (admin)" : "");
+          }
+        }
+
+        // update game-controls buttons
+        if (currentIsAdmin) {
+          roundsModeSelect.value = roundsMode;
+          if (status === "lobby") {
+            btnStartGame.disabled = false;
+            btnNextRound.disabled = true;
+            btnEndGame.disabled = true;
+            gameHintEl.textContent = "Status: lobby. Choose rounds and click 'Start game'.";
+          } else if (status === "in_progress") {
+            btnStartGame.disabled = true;
+            btnEndGame.disabled = false;
+            btnNextRound.disabled = currentRound >= totalRounds;
+            gameHintEl.textContent = "Game in progress. Use 'Next round' to advance or 'End game' to finish.";
+          } else {
+            btnStartGame.disabled = true;
+            btnNextRound.disabled = true;
+            btnEndGame.disabled = true;
+            gameHintEl.textContent = "Game finished.";
           }
         }
       }, (err) => {
@@ -487,9 +578,8 @@
 
         let html = "";
         let isYouAdmin = false;
-
-        // populate admin vote dropdown
         const options = [];
+
         snap.forEach((docSnap) => {
           const p = docSnap.data();
           const pid = docSnap.id;
@@ -500,13 +590,11 @@
           if (isYou && isAdmin) isYouAdmin = true;
 
           html += `<div>${name}${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
-
           options.push({ id: pid, name });
         });
 
         listEl.innerHTML = html;
 
-        // update "you" display
         if (currentPlayerDisplayName) {
           youNameEl.textContent = currentPlayerDisplayName + (isYouAdmin ? " (admin)" : "");
           youIdEl.textContent = "Player ID: " + (currentPlayerId || "unknown");
@@ -514,8 +602,8 @@
 
         currentIsAdmin = isYouAdmin;
         adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
+        gameControlsEl.style.display = currentIsAdmin ? "block" : "none";
 
-        // update dropdown options
         adminVoteSelect.innerHTML = '<option value="">-- choose player --</option>';
         options.forEach((opt) => {
           const o = document.createElement('option');
@@ -524,7 +612,6 @@
           adminVoteSelect.appendChild(o);
         });
 
-        // recompute votes display
         renderAdminVotes();
       }, (err) => {
         console.error(err);
@@ -561,7 +648,7 @@
     }
 
     /************************************************
-     * 9) Render admin votes from latest snapshot
+     * 9) Render admin votes
      ************************************************/
     function renderAdminVotes() {
       if (!latestPlayersSnapshot || latestPlayersSnapshot.empty) {
@@ -600,7 +687,7 @@
     }
 
     /************************************************
-     * 10) Admin-only: apply admin by votes
+     * 10) Apply admin by votes (admin only)
      ************************************************/
     async function handleApplyAdmin() {
       if (!currentIsAdmin) {
@@ -632,7 +719,6 @@
         return;
       }
 
-      // find player with max votes
       let winnerId = null;
       let maxVotes = 0;
       Object.keys(voteCounts).forEach((pid) => {
@@ -640,17 +726,9 @@
         if (count > maxVotes) {
           maxVotes = count;
           winnerId = pid;
-        } else if (count === maxVotes && maxVotes > 0) {
-          // tie – keep as-is, but we'll handle below
         }
       });
 
-      if (!winnerId) {
-        alert("Could not determine a winner.");
-        return;
-      }
-
-      // check tie
       const tied = Object.values(voteCounts).filter(v => v === maxVotes).length;
       if (tied > 1) {
         alert("There is a tie in votes. Resolve tie first.");
@@ -664,14 +742,12 @@
       }
 
       try {
-        // update game doc
         const gameRef = doc(db, "games", currentGameId);
         await setDoc(gameRef, {
           adminPlayerId: winnerId,
           adminDisplayName: winnerName
         }, { merge: true });
 
-        // update players' isAdmin flags
         const batchPromises = [];
         latestPlayersSnapshot.forEach((docSnap) => {
           const pid = docSnap.id;
@@ -692,12 +768,113 @@
     }
 
     /************************************************
-     * 11) Wire up buttons
+     * 11) Game controls (admin only)
+     ************************************************/
+    async function handleStartGame() {
+      if (!currentIsAdmin || !currentGameId) {
+        alert("Only the admin can start the game.");
+        return;
+      }
+      try {
+        const gameRef = doc(db, "games", currentGameId);
+        const snap = await getDoc(gameRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const questions = data.questions || [];
+        const totalQ = questions.length;
+
+        let mode = roundsModeSelect.value || "3";
+        let totalRounds;
+        if (mode === "all") {
+          totalRounds = totalQ;
+        } else {
+          totalRounds = parseInt(mode, 10) || 3;
+          if (totalRounds > totalQ) totalRounds = totalQ;
+        }
+
+        await setDoc(gameRef, {
+          status: "in_progress",
+          roundsMode: mode,
+          totalRounds,
+          currentRound: 1,
+          currentQuestionIndex: 0
+        }, { merge: true });
+
+        log("Game started with " + totalRounds + " rounds (mode=" + mode + ").");
+      } catch (err) {
+        console.error(err);
+        log("Error starting game: " + err.message);
+        alert("Error starting game; see log.");
+      }
+    }
+
+    async function handleNextRound() {
+      if (!currentIsAdmin || !currentGameId) {
+        alert("Only the admin can advance rounds.");
+        return;
+      }
+      try {
+        const gameRef = doc(db, "games", currentGameId);
+        const snap = await getDoc(gameRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const questions = data.questions || [];
+        const totalQ = questions.length;
+
+        let currentRound = data.currentRound || 1;
+        let totalRounds = data.totalRounds || 1;
+        let idx = data.currentQuestionIndex || 0;
+
+        if (currentRound >= totalRounds) {
+          alert("Already at last round.");
+          return;
+        }
+
+        currentRound += 1;
+        idx = Math.min(idx + 1, totalQ - 1);
+
+        await setDoc(gameRef, {
+          currentRound,
+          currentQuestionIndex: idx
+        }, { merge: true });
+
+        log("Moved to round " + currentRound + ".");
+      } catch (err) {
+        console.error(err);
+        log("Error moving to next round: " + err.message);
+        alert("Error moving to next round; see log.");
+      }
+    }
+
+    async function handleEndGame() {
+      if (!currentIsAdmin || !currentGameId) {
+        alert("Only the admin can end the game.");
+        return;
+      }
+      try {
+        const gameRef = doc(db, "games", currentGameId);
+        await setDoc(gameRef, {
+          status: "finished"
+        }, { merge: true });
+
+        log("Game marked as finished.");
+      } catch (err) {
+        console.error(err);
+        log("Error ending game: " + err.message);
+        alert("Error ending game; see log.");
+      }
+    }
+
+    /************************************************
+     * 12) Wire up buttons
      ************************************************/
     document.getElementById('btnCreate').addEventListener('click', handleCreate);
     document.getElementById('btnJoin').addEventListener('click', handleJoin);
     document.getElementById('btnVoteAdmin').addEventListener('click', handleVoteAdmin);
     document.getElementById('btnApplyAdmin').addEventListener('click', handleApplyAdmin);
+    btnStartGame.addEventListener('click', handleStartGame);
+    btnNextRound.addEventListener('click', handleNextRound);
+    btnEndGame.addEventListener('click', handleEndGame);
   </script>
 </body>
 </html>
