@@ -2,322 +2,395 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bible Round Table – Realtime Test</title>
+  <title>Bible Round Table – Realtime Test (Host)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    :root {
+      --bg: #020617;
+      --panel: #020617;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.15);
+      --accent2: #22c55e;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020617;
-      color: #e5e7eb;
       margin: 0;
-      padding: 1rem;
+      padding: 0;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 40%, #000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
     }
-    h1 { margin-top: 0; }
-    .panel {
-      max-width: 1100px;
+    .shell {
+      max-width: 1200px;
       margin: 0 auto;
-      background: #020617;
-      border-radius: 12px;
-      border: 1px solid #334155;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      padding: 0.75rem;
     }
-    input, button, select {
-      font: inherit;
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 0.4rem;
+    }
+    .small {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1.2fr 1.2fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 0.7rem;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.7);
+      min-height: 0;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.12rem;
     }
     input[type="text"], select {
-      padding: 0.4rem 0.5rem;
+      width: 100%;
+      padding: 0.35rem 0.6rem;
       border-radius: 999px;
       border: 1px solid #475569;
       background: #020617;
-      color: #e5e7eb;
-      width: 100%;
-      max-width: 260px;
+      color: var(--text);
+      font: inherit;
     }
     button {
-      margin-top: 0.35rem;
-      padding: 0.4rem 0.8rem;
-      border-radius: 999px;
       border: none;
-      background: #f97316;
-      color: #020617;
+      border-radius: 999px;
+      padding: 0.35rem 0.8rem;
+      font: inherit;
+      font-size: 0.8rem;
       cursor: pointer;
+      background: var(--accent);
+      color: #020617;
       font-weight: 600;
     }
     button.secondary {
-      background: #1e293b;
-      color: #e5e7eb;
+      background: #111827;
+      color: var(--text);
     }
-    button.small {
-      padding: 0.25rem 0.6rem;
-      font-size: 0.8rem;
+    button.danger {
+      background: #b91c1c;
+      color: #fee2e2;
     }
-    button.cardBtn {
-      border-radius: 12px;
-      padding: 0.55rem 0.75rem;
-      background: #020617;
-      border: 1px solid #475569;
-      color: #e5e7eb;
-      text-align: left;
-      width: 100%;
-      max-width: 260px;
-      white-space: normal;
-    }
-    button.cardBtn.correct {
-      border-color: #22c55e;
-    }
-    button.cardBtn.wrong {
-      border-color: #f97316;
-    }
-    button.cardBtn:disabled {
-      opacity: 0.5;
+    button:disabled {
+      opacity: 0.55;
       cursor: default;
     }
-    .row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-top: 0.75rem;
-    }
-    .box {
-      flex: 1 1 260px;
-      border-radius: 10px;
-      border: 1px solid #1f2937;
-      padding: 0.75rem;
-      background: #020617;
-    }
-    .label {
-      font-size: 0.8rem;
-      color: #9ca3af;
-      margin-bottom: 0.15rem;
-    }
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.85rem;
-      word-break: break-all;
-    }
-    .field {
-      margin-bottom: 0.5rem;
-    }
-    .section-title {
-      font-size: 0.9rem;
+    .vstack { display: flex; flex-direction: column; gap: 0.4rem; }
+    .hstack { display: flex; gap: 0.4rem; align-items: center; }
+
+    .sectionTitle {
+      font-size: 0.82rem;
       font-weight: 600;
       margin-bottom: 0.25rem;
     }
-    #log {
-      font-size: 0.78rem;
-      white-space: pre-wrap;
-      max-height: 220px;
-      overflow-y: auto;
-      border-radius: 8px;
-      border: 1px solid #1f2937;
-      padding: 0.5rem;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      font-size: 0.75rem;
       background: #020617;
     }
-    #question, #verseRef, #verseText {
-      margin: 0.15rem 0;
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+
+    #debugLog {
+      white-space: pre-wrap;
+      font-size: 0.75rem;
+      max-height: 260px;
+      overflow-y: auto;
     }
-    #playersList div {
-      padding: 0.1rem 0;
-      font-size: 0.85rem;
+
+    #hostChatList {
+      font-size: 0.75rem;
+      max-height: 180px;
+      overflow-y: auto;
     }
-    #adminControls {
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-      border-top: 1px dashed #1f2937;
-      display: none;
+
+    #hostChatList div {
+      margin-bottom: 0.18rem;
     }
-    #adminVotesList div {
-      padding: 0.1rem 0;
-      font-size: 0.8rem;
-      color: #cbd5f5;
+
+    .roomListHostItem {
+      border-radius: 10px;
+      border: 1px solid #111827;
+      padding: 0.35rem 0.45rem;
+      margin-bottom: 0.25rem;
+      background: radial-gradient(circle at top, rgba(148,163,184,0.12), #020617 60%);
+      font-size: 0.75rem;
     }
-    #gameControls {
-      margin-top: 0.75rem;
-      padding-top: 0.5rem;
-      border-top: 1px dashed #1f2937;
-      display: none;
-    }
-    #cardsContainer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.4rem;
-    }
-    #roundTimer {
+
+    .roomListHostItemTitle {
       font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .answerCardsHost button {
+      width: 100%;
+      text-align: left;
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
+      cursor: default;
+    }
+
+    .timerBlink {
+      animation: blinkTimer 0.3s ease-out;
+    }
+    @keyframes blinkTimer {
+      0% { transform: scale(1); color: var(--text); }
+      50% { transform: scale(1.5); color: #fca5a5; }
+      100% { transform: scale(1); color: var(--text); }
+    }
+
+    @media (max-width: 1050px) {
+      .grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="panel">
-    <h1>Bible Round Table – Realtime Test</h1>
-    <p style="font-size:0.9rem;color:#9ca3af">
-      This page tests: Google Sheets → Apps Script → Firebase → multiplayer.
-      <br>Use one browser to <strong>Create Game</strong>, then others to <strong>Join</strong> with the same Game ID.
-    </p>
+  <div class="shell">
+    <h1>Bible Round Table – Realtime Test (Host)</h1>
+    <div class="small">
+      Host / admin control panel. Players join via
+      <span class="mono">play.html</span>.
+    </div>
 
-    <div class="row">
-      <div class="box">
-        <div class="section-title">1. Player Info</div>
-        <div class="field">
-          <div class="label">First name (max 15 chars)</div>
-          <input type="text" id="firstName" maxlength="15" placeholder="e.g. John">
-        </div>
-        <div class="field">
-          <div class="label">Last name (max 15 chars)</div>
-          <input type="text" id="lastName" maxlength="15" placeholder="e.g. Kim">
+    <!-- Top row: player info + create/join -->
+    <div class="grid">
+      <!-- Player info -->
+      <div class="panel">
+        <div class="sectionTitle">1. Player Info</div>
+        <div class="vstack">
+          <div>
+            <label for="firstName">First name (max 15 chars)</label>
+            <input id="firstName" type="text" maxlength="15" placeholder="e.g. David">
+          </div>
+          <div>
+            <label for="lastName">Last name (max 15 chars)</label>
+            <input id="lastName" type="text" maxlength="15" placeholder="e.g. Kim">
+          </div>
+          <div class="small">
+            This name identifies you as a player / admin.
+          </div>
         </div>
       </div>
 
-      <div class="box">
-        <div class="section-title">2. Create Game (become initial Admin)</div>
-        <div class="field">
-          <div class="label">Sheets API URL (Apps Script Web App)</div>
-          <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXX/exec">
-        </div>
-        <button id="btnCreate">Create Game</button>
-        <div class="field" style="margin-top:0.5rem">
-          <div class="label">Created Game ID</div>
-          <div class="mono" id="createdGameId">–</div>
+      <!-- Create game -->
+      <div class="panel">
+        <div class="sectionTitle">2. Create Game (become initial Admin)</div>
+        <div class="vstack">
+          <div>
+            <label for="sheetsApiUrl">
+              Sheets API URL (Apps Script Web App)<br>
+              <span class="small">(Leave default or type <span class="mono">1234</span> to use default)</span>
+            </label>
+            <input id="sheetsApiUrl" type="text" placeholder="Apps Script Web App URL">
+          </div>
+          <div class="hstack">
+            <button id="createGameBtn">Create Game</button>
+            <div class="small">
+              Created Game ID:<br>
+              <span class="mono" id="createdGameId">–</span>
+            </div>
+          </div>
+          <div class="small">
+            Questions are loaded from Google Sheets via the Apps Script URL, then stored in Firebase.
+          </div>
         </div>
       </div>
 
-      <div class="box">
-        <div class="section-title">3. Join Existing Game</div>
-        <div class="field">
-          <div class="label">Game ID</div>
-          <input type="text" id="joinGameId" placeholder="Paste Game ID">
-        </div>
-        <button class="secondary" id="btnJoin">Join Game</button>
-        <div class="field" style="margin-top:0.5rem">
-          <div class="label">Current Connection</div>
-          <div class="mono" id="status">Not connected</div>
+      <!-- Join game -->
+      <div class="panel">
+        <div class="sectionTitle">3. Join Existing Game</div>
+        <div class="vstack">
+          <div>
+            <label for="joinGameId">Game ID</label>
+            <input id="joinGameId" type="text" placeholder="Paste Game ID">
+          </div>
+          <div class="hstack">
+            <button id="joinGameBtn">Join Game</button>
+            <div class="small">
+              Current Connection:<br>
+              <span class="mono" id="currentConnection">Not connected</span>
+            </div>
+          </div>
+          <div class="small">
+            Game IDs can be seen in the room list on <span class="mono">play.html</span> or here in the "Rooms" panel.
+          </div>
         </div>
       </div>
     </div>
 
-    <hr style="margin:1rem 0;border:0;border-top:1px solid #1f2937;">
-
-    <div class="row">
-      <div class="box">
-        <div class="section-title">Shared Game State</div>
-        <div class="label">Game ID</div>
-        <div class="mono" id="currentGameId">–</div>
-
-        <div class="label" style="margin-top:0.2rem">Game status</div>
-        <div id="gameStatus">Lobby</div>
-
-        <div class="label" style="margin-top:0.2rem">Round</div>
-        <div id="roundInfo">–</div>
-
-        <div class="label" style="margin-top:0.2rem">Mode</div>
-        <div id="roundMode">–</div>
-
-        <div class="label" style="margin-top:0.2rem">Timer (visual only for now)</div>
-        <div id="roundTimer">–</div>
-
-        <div class="label" style="margin-top:0.3rem">Current admin</div>
-        <div id="currentAdmin">–</div>
-
-        <div class="label" style="margin-top:0.4rem">Verse reference</div>
-        <div id="verseRef">–</div>
-
-        <div class="label" style="margin-top:0.4rem">Verse text</div>
-        <div id="verseText">–</div>
-
-        <div class="label" style="margin-top:0.4rem">Question</div>
-        <div id="question">–</div>
+    <!-- Middle row: shared game state / players / debug -->
+    <div class="grid" style="margin-top:0.75rem;">
+      <!-- Shared game state -->
+      <div class="panel">
+        <div class="sectionTitle">Shared Game State</div>
+        <div class="vstack small">
+          <div>Game ID: <span class="mono" id="stateGameId">–</span></div>
+          <div>Game status: <span id="stateStatus">–</span></div>
+          <div>Round: <span id="stateRound">–</span></div>
+          <div>Mode: <span id="stateMode">–</span></div>
+          <div>Timer (visual only for now): <span id="stateTimer" class="mono">–</span></div>
+          <div>Current admin: <span id="stateAdmin">–</span></div>
+          <div style="margin-top:0.4rem;">
+            <div class="small">Verse reference</div>
+            <div class="mono" id="stateVerseRef">–</div>
+          </div>
+          <div>
+            <div class="small">Verse text</div>
+            <div id="stateVerseText" style="font-size:0.8rem; line-height:1.35;">–</div>
+          </div>
+          <div>
+            <div class="small">Question</div>
+            <div id="stateQuestion" style="font-size:0.8rem; line-height:1.35;">–</div>
+          </div>
+        </div>
       </div>
 
-      <div class="box">
-        <div class="section-title">Players in this game</div>
-        <div class="label">You</div>
-        <div class="mono" id="youName">–</div>
-        <div class="mono" id="youId" style="font-size:0.75rem;color:#9ca3af;">–</div>
+      <!-- Players + admin stuff -->
+      <div class="panel">
+        <div class="sectionTitle">Players in this game</div>
+        <div id="playersPanelHost" style="margin-bottom:0.4rem;"></div>
 
-        <div class="label" style="margin-top:0.5rem">All players</div>
-        <div id="playersList" style="font-size:0.85rem;color:#e5e7eb;">
-          (none yet)
+        <!-- Admin voting -->
+        <div style="border-top:1px solid #1f2937; margin-top:0.4rem; padding-top:0.4rem;">
+          <div class="sectionTitle" style="font-size:0.8rem;">Admin voting</div>
+          <div class="vstack">
+            <div>
+              <label for="adminVoteSelect">Vote for admin</label>
+              <select id="adminVoteSelect">
+                <option value="">-- choose player --</option>
+              </select>
+            </div>
+            <div class="hstack">
+              <button id="submitVoteBtn" class="secondary">Submit vote</button>
+              <div class="small">Current votes: <span id="adminVotesSummary">–</span></div>
+            </div>
+          </div>
         </div>
 
-        <div id="adminVoting" style="margin-top:0.75rem;">
-          <div class="section-title" style="font-size:0.85rem;">Admin voting</div>
-          <div class="field">
-            <div class="label">Vote for admin</div>
-            <select id="adminVoteSelect">
-              <option value="">-- choose player --</option>
-            </select>
-            <button class="small secondary" id="btnVoteAdmin">Submit vote</button>
-          </div>
-          <div class="field">
-            <div class="label">Current votes</div>
-            <div id="adminVotesList">(no votes yet)</div>
-          </div>
-          <div id="adminControls">
-            <div class="label">Admin controls</div>
-            <button class="small" id="btnApplyAdmin">Apply admin by votes</button>
-            <div style="font-size:0.75rem;color:#9ca3af;margin-top:0.25rem;">
+        <!-- Admin controls -->
+        <div style="border-top:1px solid #1f2937; margin-top:0.4rem; padding-top:0.4rem;">
+          <div class="sectionTitle" style="font-size:0.8rem;">Admin controls</div>
+          <div class="vstack">
+            <button id="applyAdminVotesBtn" class="secondary">Apply admin by votes</button>
+            <div class="small">
               (You are admin – this will set the player with the most votes as new admin.)
             </div>
           </div>
         </div>
 
-        <div id="gameControls">
-          <div class="section-title" style="font-size:0.85rem;">Game setup (admin only)</div>
-          <div class="field">
-            <div class="label">Rounds</div>
-            <select id="roundsMode">
-              <option value="3">3 rounds</option>
-              <option value="5">5 rounds</option>
-              <option value="10">10 rounds</option>
-              <option value="all">All questions</option>
-            </select>
-          </div>
-          <div class="field">
-            <button class="small" id="btnStartGame">Start game</button>
-            <button class="small secondary" id="btnNextRound">Next round</button>
-            <button class="small secondary" id="btnEndGame">End game</button>
-          </div>
-          <div style="font-size:0.75rem;color:#9ca3af;" id="gameHint">
-            Status: waiting in lobby. Choose rounds and click "Start game".
+        <!-- Game setup -->
+        <div style="border-top:1px solid #1f2937; margin-top:0.4rem; padding-top:0.4rem;">
+          <div class="sectionTitle" style="font-size:0.8rem;">Game setup (admin only)</div>
+          <div class="vstack small">
+            <div>
+              <label for="roundsModeSelect">Rounds</label>
+              <select id="roundsModeSelect">
+                <option value="3">3 rounds</option>
+                <option value="5">5 rounds</option>
+                <option value="10">10 rounds</option>
+                <option value="all">All questions</option>
+              </select>
+            </div>
+            <div class="hstack" style="margin-top:0.3rem;">
+              <button id="startGameBtn">Start game</button>
+              <button id="nextRoundBtn" class="secondary">Next round</button>
+              <button id="endGameBtn" class="secondary">End game</button>
+            </div>
+            <div class="hstack" style="margin-top:0.3rem;">
+              <button id="deleteGameBtn" class="danger">Delete game</button>
+              <span class="small">Marks room as deleted and hides it from lobby.</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="box">
-        <div class="section-title">Debug Log</div>
-        <div id="log"></div>
+      <!-- Debug + chat + room list for host -->
+      <div class="panel">
+        <div class="sectionTitle">Debug Log</div>
+        <div id="debugLog"></div>
+
+        <div style="border-top:1px solid #1f2937; margin-top:0.4rem; padding-top:0.4rem;">
+          <div class="sectionTitle" style="font-size:0.8rem;">Room chat (read-only)</div>
+          <div id="hostChatList"
+               style="margin-top:0.3rem;border-radius:12px;border:1px solid #1f2937;
+                      padding:0.3rem 0.4rem;max-height:160px;overflow-y:auto;
+                      font-size:0.75rem;background:#020617;">
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #1f2937; margin-top:0.4rem; padding-top:0.4rem;">
+          <div class="sectionTitle" style="font-size:0.8rem;">Rooms (recent)</div>
+          <div id="roomsHostList"
+               style="margin-top:0.3rem;border-radius:12px;border:1px solid #1f2937;
+                      padding:0.3rem 0.4rem;max-height:180px;overflow-y:auto;
+                      font-size:0.75rem;background:#020617;">
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="row" style="margin-top:1rem;">
-      <div class="box">
-        <div class="section-title">Your answer cards (this round)</div>
-        <div class="label">Click one card to answer. Wrong answers apply penalties.</div>
-        <div id="cardsContainer">
-          (waiting for game to start)
+    <!-- Bottom row: host view of cards + notes -->
+    <div class="grid" style="margin-top:0.75rem;">
+      <!-- Answer cards -->
+      <div class="panel">
+        <div class="sectionTitle">Your answer cards (this round)</div>
+        <div class="small">
+          Click one card to answer. Wrong answers apply penalties. (For host view only; real answering happens from play.html.)
         </div>
-        <div class="label" style="margin-top:0.5rem">Round feedback</div>
-        <div id="roundFeedback">–</div>
+        <div class="answerCardsHost" id="answerCardsHost" style="margin-top:0.4rem;">
+          <div class="small">Waiting for game to start.</div>
+        </div>
+        <div class="small" style="margin-top:0.3rem;" id="hostRoundFeedback">–</div>
       </div>
-      <div class="box">
-        <div class="section-title">Round notes</div>
-        <p style="font-size:0.8rem;color:#9ca3af;">
+
+      <!-- Notes -->
+      <div class="panel">
+        <div class="sectionTitle">Round notes</div>
+        <div class="small">
           • First correct answer: +10 pts<br>
-          • 2nd: +5 pts, 3rd: +3 pts<br>
-          • 4th–5th: +1 pt, 6+ : 0 pts<br>
-          • Wrong answers: −1, then −2, then −4, etc. per round (doubles each time).
-        </p>
+          • 2nd–5th: +5, +3 pts<br>
+          • 4th–5th, if any: +1 pt<br>
+          • 6+ : 0 pts<br>
+          • Wrong answers: -1, then -2, then -4, etc (per round, doubles each time).
+        </div>
+      </div>
+
+      <!-- Spacer or future controls -->
+      <div class="panel">
+        <div class="sectionTitle">Tips</div>
+        <div class="small">
+          Use this page only as host/admin.<br><br>
+          Players join via <span class="mono">play.html</span>, pick a room, and answer cards there in realtime.
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Firebase + app logic -->
+  <!-- Firebase / host logic -->
   <script type="module">
-    /************************************************
-     * 1) Firebase setup – USE YOUR CONFIG HERE
-     ************************************************/
+    /************ Firebase init ************/
     const firebaseConfig = {
       apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
       authDomain: "christian-roundtable.firebaseapp.com",
@@ -333,959 +406,735 @@
       getFirestore,
       collection,
       doc,
-      addDoc,
       setDoc,
+      addDoc,
+      deleteDoc,
       getDoc,
+      getDocs,
       onSnapshot,
       serverTimestamp,
-      increment
+      orderBy,
+      limit,
+      query
     } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    /************************************************
-     * 2) Helpers & state
-     ************************************************/
+    /************ State ************/
+    let currentGameId = null;
+    let currentPlayerId = null;
+    let currentPlayerName = null;
+    let currentIsAdmin = false;
+    let latestPlayers = [];
+    let questionsCache = [];
+    let currentRoundsMode = "3";
+    let currentRoundNumber = 0;
+    let totalRounds = 0;
+    let lastGameStatus = null;
+
+    // listeners
+    let unsubGame = null;
+    let unsubPlayers = null;
+    let unsubHostChat = null;
+    let unsubRoomsHost = null;
+    let unsubMyRound = null;
+
+    // timer (visual only)
+    let timerInterval = null;
+
+    // Default Apps Script URL (replace with your real one once)
+    const DEFAULT_SHEETS_API_URL =
+      "https://script.google.com/macros/s/REPLACE_WITH_YOUR_REAL_WEBAPP_URL/exec";
+
+    // Helper
+    const $ = id => document.getElementById(id);
+
     function log(msg) {
-      const el = document.getElementById('log');
+      const el = $("debugLog");
       el.textContent += msg + "\\n";
       el.scrollTop = el.scrollHeight;
     }
 
-    function getPlayerName() {
-      let f = document.getElementById('firstName').value.trim() || "Anon";
-      let l = document.getElementById('lastName').value.trim() || "Player";
-      f = f.slice(0, 15);
-      l = l.slice(0, 15);
+    /************ Name / IDs ************/
+    function getName() {
+      let f = $("firstName").value.trim() || "Anon";
+      let l = $("lastName").value.trim() || "Player";
+      f = f.slice(0,15);
+      l = l.slice(0,15);
       return { firstName: f, lastName: l };
     }
 
-    function makePlayerId(firstName, lastName) {
+    function makePlayerId(firstName,lastName) {
       const raw = (firstName + "_" + lastName).toLowerCase();
-      return raw.replace(/[^a-z0-9_]/g, "").slice(0, 30) || "player_" + Math.random().toString(36).slice(2, 10);
+      return raw.replace(/[^a-z0-9_]/g,"").slice(0,30) || "player_" + Math.random().toString(36).slice(2,9);
     }
 
-    function getPointsForPlace(place) {
-      if (place === 1) return 10;
-      if (place === 2) return 5;
-      if (place === 3) return 3;
-      if (place === 4 || place === 5) return 1;
-      return 0;
-    }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-
-    function extractOptionsFromQuestion(q) {
-      const correct =
-        q.correctAnswer || q.CorrectAnswer || q.correct || q.answer || "";
-      const elseAns =
-        q.ElseAnswer || q.elseAnswer || null;
-      const wrongs = [];
-      const keys = [
-        "Wrong1","Wrong2","Wrong3","Wrong4","Wrong5",
-        "Wrong6","Wrong7","Wrong8","Wrong9",
-        "wrong1","wrong2","wrong3","wrong4","wrong5",
-        "wrong6","wrong7","wrong8","wrong9"
-      ];
-      keys.forEach(k => {
-        if (q[k]) wrongs.push(q[k]);
-      });
-      return { correct, elseAns, wrongs };
-    }
-
-function buildCardsForPlayer(correct, elseAns, wrongs) {
-  const safeWrongs = (wrongs || []).filter(x => !!x);
-  if (!correct && !elseAns && safeWrongs.length === 0) {
-    return { cards: [], correctIndex: -1 };
-  }
-
-  // Decide whether the "else" answer (e.g., "Answer is not here")
-  // should be the correct one for this player.
-  let useElse = false;
-  if (elseAns) {
-    useElse = Math.random() < 0.5;
-  }
-
-  let correctText;
-  let wrongCandidates;
-
-  if (useElse && elseAns) {
-    // ElseAnswer is correct; wrongs are other verses (including the real ref)
-    correctText = elseAns;
-    wrongCandidates = safeWrongs
-      .concat(correct ? [correct] : [])
-      .filter(v => v && v !== correctText);
-  } else {
-    // Normal: verse reference is correct; elseAnswer can be a wrong option
-    correctText = correct || elseAns || safeWrongs[0];
-    wrongCandidates = safeWrongs
-      .concat(elseAns ? [elseAns] : [])
-      .filter(v => v && v !== correctText);
-  }
-
-  // If we still have no wrong candidates, just reuse safeWrongs
-  if (wrongCandidates.length === 0) {
-    wrongCandidates = safeWrongs.slice();
-  }
-
-  // Pad wrong candidates so we can always pick 3
-  const fallbackPool = ["I don't know", "Not sure", "None of these"];
-  let i = 0;
-  while (wrongCandidates.length < 3) {
-    const fallback = fallbackPool[i % fallbackPool.length];
-    if (!wrongCandidates.includes(fallback) && fallback !== correctText) {
-      wrongCandidates.push(fallback);
-    }
-    i++;
-  }
-
-  shuffle(wrongCandidates);
-  const wrongsPicked = wrongCandidates.slice(0, 3);
-
-  const all = [correctText, ...wrongsPicked];
-  shuffle(all);
-  const correctIndex = all.indexOf(correctText);
-  return { cards: all, correctIndex };
-}
-
-    let currentGameId = null;
-    let currentPlayerId = null;
-    let currentPlayerDisplayName = null;
-    let currentIsAdmin = false;
-    let currentRoundNumber = 0;
-
-    let unsubscribeGame = null;
-    let unsubscribePlayers = null;
-    let latestPlayersSnapshot = null;
-
-    let unsubscribeMyRound = null;
-    let unsubscribeRoundAdmin = null;
-    let myRoundState = null;
-
-    const adminControlsEl = document.getElementById('adminControls');
-    const adminVoteSelect = document.getElementById('adminVoteSelect');
-    const adminVotesListEl = document.getElementById('adminVotesList');
-
-    const gameControlsEl = document.getElementById('gameControls');
-    const gameStatusEl = document.getElementById('gameStatus');
-    const roundInfoEl = document.getElementById('roundInfo');
-    const roundModeEl = document.getElementById('roundMode');
-    const gameHintEl = document.getElementById('gameHint');
-    const roundsModeSelect = document.getElementById('roundsMode');
-    const btnStartGame = document.getElementById('btnStartGame');
-    const btnNextRound = document.getElementById('btnNextRound');
-    const btnEndGame = document.getElementById('btnEndGame');
-    const roundTimerEl = document.getElementById('roundTimer');
-    const cardsContainer = document.getElementById('cardsContainer');
-    const roundFeedbackEl = document.getElementById('roundFeedback');
-
-    let timerInterval = null;
-
-    /************************************************
-     * 3) Player registration
-     ************************************************/
-    async function registerPlayer(gameId, isAdminInitial) {
-      const { firstName, lastName } = getPlayerName();
-      const displayName = (firstName + " " + lastName).trim();
-      const playerId = makePlayerId(firstName, lastName);
-
-      const playersCol = collection(db, "games", gameId, "players");
-      const playerRef = doc(playersCol, playerId);
-
-      await setDoc(playerRef, {
-        firstName,
-        lastName,
-        displayName,
-        isAdmin: !!isAdminInitial,
-        joinedAt: serverTimestamp(),
-        score: 0,
-        totalWrongPenalty: 0,
-        totalCorrectTimeMs: 0
-      }, { merge: true });
-
-      currentPlayerId = playerId;
-      currentPlayerDisplayName = displayName;
-
-      log("Registered player " + displayName + " with ID " + playerId + (isAdminInitial ? " [admin]" : ""));
-    }
-
-    /************************************************
-     * 4) Create game – fetch questions, set admin
-     ************************************************/
-    async function handleCreate() {
-      const scriptUrl = document.getElementById('scriptUrl').value.trim();
-      if (!scriptUrl) {
-        alert("Enter your Apps Script Web App URL first.");
-        return;
-      }
-
-      const { firstName, lastName } = getPlayerName();
-      const adminDisplayName = (firstName + " " + lastName).trim();
-      const adminPlayerId = makePlayerId(firstName, lastName);
-
-      log("Creating game as " + adminDisplayName + "...");
-
-      try {
-        const res = await fetch(scriptUrl + "?action=getQuestions");
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const questions = await res.json();
-        log("Loaded " + questions.length + " questions from Sheets.");
-
-        if (!Array.isArray(questions) || questions.length === 0) {
-          alert("No questions returned from Sheets.");
-          return;
-        }
-
-        const gamesCol = collection(db, "games");
-        const gameDoc = await addDoc(gamesCol, {
-          createdAt: serverTimestamp(),
-          status: "lobby",
-          roundsMode: "3",
-          totalRounds: 3,
-          currentRound: 0,
-          adminDisplayName,
-          adminPlayerId,
-          currentQuestionIndex: 0,
-          questions
-        });
-
-        const gameId = gameDoc.id;
-        currentGameId = gameId;
-
-        document.getElementById('createdGameId').textContent = gameId;
-        document.getElementById('joinGameId').value = gameId;
-        document.getElementById('status').textContent = "Created game " + gameId;
-        document.getElementById('currentGameId').textContent = gameId;
-        document.getElementById('currentAdmin').textContent = adminDisplayName;
-
-        await registerPlayer(gameId, true);
-
-        subscribeToGame(gameId);
-        subscribeToPlayers(gameId);
-      } catch (err) {
-        console.error(err);
-        log("Error creating game: " + err.message);
-        alert("Error creating game; see log.");
-      }
-    }
-
-    /************************************************
-     * 5) Join existing game – register as player
-     ************************************************/
-    async function handleJoin() {
-      const gameId = document.getElementById('joinGameId').value.trim();
-      if (!gameId) {
-        alert("Enter a Game ID to join.");
-        return;
-      }
-
-      try {
-        const gameRef = doc(db, "games", gameId);
-        const snap = await getDoc(gameRef);
-        if (!snap.exists()) {
-          alert("Game not found. Check the Game ID.");
-          return;
-        }
-
-        const data = snap.data();
-        document.getElementById('currentAdmin').textContent = data.adminDisplayName || "–";
-
-        currentGameId = gameId;
-        document.getElementById('currentGameId').textContent = gameId;
-        document.getElementById('status').textContent = "Joining game " + gameId + "...";
-
-        await registerPlayer(gameId, false);
-
-        subscribeToGame(gameId);
-        subscribeToPlayers(gameId);
-      } catch (err) {
-        console.error(err);
-        log("Error joining game: " + err.message);
-        alert("Error joining game; see log.");
-      }
-    }
-
-    /************************************************
-     * 6) Subscribe to game doc
-     ************************************************/
-    function subscribeToGame(gameId) {
-      if (unsubscribeGame) {
-        unsubscribeGame();
-        unsubscribeGame = null;
-      }
-      const gameRef = doc(db, "games", gameId);
-
-      unsubscribeGame = onSnapshot(gameRef, (snap) => {
-        if (!snap.exists()) {
-          document.getElementById('status').textContent = "Game not found.";
-          log("Game " + gameId + " does not exist.");
-          return;
-        }
-        const data = snap.data();
-        document.getElementById('status').textContent = "Connected to game " + gameId;
-
-        const adminName = data.adminDisplayName || "–";
-        document.getElementById('currentAdmin').textContent = adminName;
-
-        const status = data.status || "lobby";
-        gameStatusEl.textContent = status === "in_progress" ? "In progress" :
-                                   status === "finished" ? "Finished" : "Lobby";
-
-        const roundsMode = data.roundsMode || "3";
-        roundModeEl.textContent = roundsMode === "all" ? "All questions" : roundsMode + " rounds";
-
-        const totalRounds = data.totalRounds || 0;
-        const currentRound = data.currentRound || 0;
-        currentRoundNumber = currentRound;
-
-        if (status === "in_progress") {
-          roundInfoEl.textContent = "Round " + currentRound + " of " + totalRounds;
-        } else if (status === "finished") {
-          roundInfoEl.textContent = "Game finished (" + totalRounds + " rounds)";
-        } else {
-          roundInfoEl.textContent = "Not started";
-        }
-
-        const idx = data.currentQuestionIndex || 0;
-        const qList = data.questions || [];
-        const q = qList[idx] || null;
-
-        if (q) {
-          document.getElementById('verseRef').textContent = q.verseRef || q.VerseRef || "–";
-          document.getElementById('verseText').textContent = q.verseText || q.VerseText || "–";
-          document.getElementById('question').textContent = q.question || q.Question || "–";
-          log("Showing question #" + (idx + 1) + " (" + (q.id || "no id") + ")");
-        } else {
-          document.getElementById('verseRef').textContent = "–";
-          document.getElementById('verseText').textContent = "–";
-          document.getElementById('question').textContent = "No question at this index.";
-          log("No question at index " + idx);
-        }
-
-        if (data.adminPlayerId && currentPlayerId) {
-          currentIsAdmin = (data.adminPlayerId === currentPlayerId);
-          adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
-          gameControlsEl.style.display = currentIsAdmin ? "block" : "none";
-
-          const youNameEl = document.getElementById('youName');
-          if (currentPlayerDisplayName) {
-            youNameEl.textContent = currentPlayerDisplayName + (currentIsAdmin ? " (admin)" : "");
-          }
-        }
-
-        if (currentIsAdmin) {
-          roundsModeSelect.value = roundsMode;
-          if (status === "lobby") {
-            btnStartGame.disabled = false;
-            btnNextRound.disabled = true;
-            btnEndGame.disabled = true;
-            gameHintEl.textContent = "Status: lobby. Choose rounds and click 'Start game'.";
-          } else if (status === "in_progress") {
-            btnStartGame.disabled = true;
-            btnEndGame.disabled = false;
-            btnNextRound.disabled = currentRound >= totalRounds;
-            gameHintEl.textContent = "Game in progress. Use 'Next round' to advance or 'End game' to finish.";
-          } else {
-            btnStartGame.disabled = true;
-            btnNextRound.disabled = true;
-            btnEndGame.disabled = true;
-            gameHintEl.textContent = "Game finished.";
-          }
-        }
-
-        // Timer (visual, simple 30s countdown reset per round)
-        if (status === "in_progress" && currentRound > 0) {
-          startVisualTimer();
-        } else {
-          stopVisualTimer();
-        }
-
-        // subscribe to my round state + admin scoring
-        if (status === "in_progress" && currentRound > 0) {
-          if (currentGameId && currentPlayerId) {
-            subscribeToMyRoundState(currentGameId, currentRound);
-          }
-          if (currentIsAdmin && currentGameId) {
-            subscribeRoundForAdminScoring(currentGameId, currentRound);
-          }
-        } else {
-          if (unsubscribeMyRound) { unsubscribeMyRound(); unsubscribeMyRound = null; }
-          if (unsubscribeRoundAdmin) { unsubscribeRoundAdmin(); unsubscribeRoundAdmin = null; }
-        }
-      }, (err) => {
-        console.error(err);
-        document.getElementById('status').textContent = "Error listening to game.";
-        log("onSnapshot (game) error: " + err.message);
-      });
-    }
-
-    /************************************************
-     * 7) Subscribe to players collection
-     ************************************************/
-    function subscribeToPlayers(gameId) {
-      if (unsubscribePlayers) {
-        unsubscribePlayers();
-        unsubscribePlayers = null;
-      }
-      const playersCol = collection(db, "games", gameId, "players");
-
-      unsubscribePlayers = onSnapshot(playersCol, (snap) => {
-        latestPlayersSnapshot = snap;
-
-        const listEl = document.getElementById('playersList');
-        const youNameEl = document.getElementById('youName');
-        const youIdEl = document.getElementById('youId');
-
-        if (snap.empty) {
-          listEl.textContent = "(no players yet)";
-          return;
-        }
-
-        let html = "";
-        let isYouAdmin = false;
-        const options = [];
-
-        snap.forEach((docSnap) => {
-          const p = docSnap.data();
-          const pid = docSnap.id;
-          const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
-          const isYou = (pid === currentPlayerId);
-          const isAdmin = !!p.isAdmin;
-          const score = typeof p.score === "number" ? p.score : 0;
-
-          if (isYou && isAdmin) isYouAdmin = true;
-
-          html += `<div>${name} – ${score} pts${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
-          options.push({ id: pid, name });
-        });
-
-        listEl.innerHTML = html;
-
-        if (currentPlayerDisplayName) {
-          youNameEl.textContent = currentPlayerDisplayName + (isYouAdmin ? " (admin)" : "");
-          youIdEl.textContent = "Player ID: " + (currentPlayerId || "unknown");
-        }
-
-        currentIsAdmin = isYouAdmin;
-        adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
-        gameControlsEl.style.display = currentIsAdmin ? "block" : "none";
-
-        adminVoteSelect.innerHTML = '<option value="">-- choose player --</option>';
-        options.forEach((opt) => {
-          const o = document.createElement('option');
-          o.value = opt.id;
-          o.textContent = opt.name;
-          adminVoteSelect.appendChild(o);
-        });
-
-        renderAdminVotes();
-      }, (err) => {
-        console.error(err);
-        log("onSnapshot (players) error: " + err.message);
-      });
-    }
-
-    /************************************************
-     * 8) Admin voting – write vote
-     ************************************************/
-    async function handleVoteAdmin() {
-      if (!currentGameId || !currentPlayerId) {
-        alert("Join or create a game first.");
-        return;
-      }
-      const chosenId = adminVoteSelect.value;
-      if (!chosenId) {
-        alert("Choose a player to vote for.");
-        return;
-      }
-
-      try {
-        const playerRef = doc(db, "games", currentGameId, "players", currentPlayerId);
-        await setDoc(playerRef, {
-          adminVoteFor: chosenId
-        }, { merge: true });
-
-        log("You voted for admin: " + chosenId);
-      } catch (err) {
-        console.error(err);
-        log("Error submitting vote: " + err.message);
-        alert("Error submitting vote; see log.");
-      }
-    }
-
-    /************************************************
-     * 9) Render admin votes
-     ************************************************/
-    function renderAdminVotes() {
-      if (!latestPlayersSnapshot || latestPlayersSnapshot.empty) {
-        adminVotesListEl.textContent = "(no votes yet)";
-        return;
-      }
-
-      const players = {};
-      const voteCounts = {};
-
-      latestPlayersSnapshot.forEach((docSnap) => {
-        const pid = docSnap.id;
-        const p = docSnap.data();
-        const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
-        players[pid] = name;
-
-        if (p.adminVoteFor) {
-          const cid = p.adminVoteFor;
-          voteCounts[cid] = (voteCounts[cid] || 0) + 1;
-        }
-      });
-
-      if (Object.keys(voteCounts).length === 0) {
-        adminVotesListEl.textContent = "(no votes yet)";
-        return;
-      }
-
-      let html = "";
-      Object.keys(voteCounts).forEach((pid) => {
-        const count = voteCounts[pid];
-        const name = players[pid] || pid;
-        html += `<div>${name}: ${count} vote(s)</div>`;
-      });
-
-      adminVotesListEl.innerHTML = html;
-    }
-
-    /************************************************
-     * 10) Apply admin by votes (admin only)
-     ************************************************/
-    async function handleApplyAdmin() {
-      if (!currentIsAdmin) {
-        alert("Only the current admin can apply votes.");
-        return;
-      }
-      if (!currentGameId || !latestPlayersSnapshot) {
-        alert("No game or players loaded.");
-        return;
-      }
-
-      const players = {};
-      const voteCounts = {};
-
-      latestPlayersSnapshot.forEach((docSnap) => {
-        const pid = docSnap.id;
-        const p = docSnap.data();
-        const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
-        players[pid] = { name };
-
-        if (p.adminVoteFor) {
-          const cid = p.adminVoteFor;
-          voteCounts[cid] = (voteCounts[cid] || 0) + 1;
-        }
-      });
-
-      if (Object.keys(voteCounts).length === 0) {
-        alert("No votes have been cast yet.");
-        return;
-      }
-
-      let winnerId = null;
-      let maxVotes = 0;
-      Object.keys(voteCounts).forEach((pid) => {
-        const count = voteCounts[pid];
-        if (count > maxVotes) {
-          maxVotes = count;
-          winnerId = pid;
-        }
-      });
-
-      const tied = Object.values(voteCounts).filter(v => v === maxVotes).length;
-      if (tied > 1) {
-        alert("There is a tie in votes. Resolve tie first.");
-        return;
-      }
-
-      const winnerName = (players[winnerId] && players[winnerId].name) || winnerId;
-
-      if (!confirm("Set new admin to: " + winnerName + " (" + maxVotes + " vote(s))?")) {
-        return;
-      }
-
-      try {
-        const gameRef = doc(db, "games", currentGameId);
-        await setDoc(gameRef, {
-          adminPlayerId: winnerId,
-          adminDisplayName: winnerName
-        }, { merge: true });
-
-        const batchPromises = [];
-        latestPlayersSnapshot.forEach((docSnap) => {
-          const pid = docSnap.id;
-          const pref = doc(db, "games", currentGameId, "players", pid);
-          batchPromises.push(setDoc(pref, {
-            isAdmin: pid === winnerId
-          }, { merge: true }));
-        });
-
-        await Promise.all(batchPromises);
-
-        log("Admin changed to " + winnerName + " by votes.");
-      } catch (err) {
-        console.error(err);
-        log("Error applying admin: " + err.message);
-        alert("Error applying admin; see log.");
-      }
-    }
-
-    /************************************************
-     * 11) Game controls (admin) – start / next / end
-     ************************************************/
-    async function generateCardsForAllPlayers(gameId, roundNumber, question) {
-      if (!latestPlayersSnapshot || latestPlayersSnapshot.empty) return;
-      const { correct, elseAns, wrongs } = extractOptionsFromQuestion(question || {});
-      const promises = [];
-
-      latestPlayersSnapshot.forEach((docSnap) => {
-        const pid = docSnap.id;
-        const { cards, correctIndex } = buildCardsForPlayer(correct, elseAns, wrongs);
-        const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", pid);
-        promises.push(setDoc(psRef, {
-          cards,
-          correctIndex,
-          hasAnswered: false,
-          isCorrect: false,
-          answerIndex: null,
-          answerTimeMs: null,
-          wrongCount: 0,
-          pointsAwarded: null
-        }, { merge: true }));
-      });
-
-      await Promise.all(promises);
-      log("Generated cards for round " + roundNumber + " for " + latestPlayersSnapshot.size + " player(s).");
-    }
-
-    async function handleStartGame() {
-      if (!currentIsAdmin || !currentGameId) {
-        alert("Only the admin can start the game.");
-        return;
-      }
-      try {
-        const gameRef = doc(db, "games", currentGameId);
-        const snap = await getDoc(gameRef);
-        if (!snap.exists()) return;
-        const data = snap.data();
-        const questions = data.questions || [];
-        const totalQ = questions.length;
-
-        let mode = roundsModeSelect.value || "3";
-        let totalRounds;
-        if (mode === "all") {
-          totalRounds = totalQ;
-        } else {
-          totalRounds = parseInt(mode, 10) || 3;
-          if (totalRounds > totalQ) totalRounds = totalQ;
-        }
-
-        await setDoc(gameRef, {
-          status: "in_progress",
-          roundsMode: mode,
-          totalRounds,
-          currentRound: 1,
-          currentQuestionIndex: 0
-        }, { merge: true });
-
-        await generateCardsForAllPlayers(currentGameId, 1, questions[0]);
-
-        log("Game started with " + totalRounds + " rounds (mode=" + mode + ").");
-      } catch (err) {
-        console.error(err);
-        log("Error starting game: " + err.message);
-        alert("Error starting game; see log.");
-      }
-    }
-
-    async function handleNextRound() {
-      if (!currentIsAdmin || !currentGameId) {
-        alert("Only the admin can advance rounds.");
-        return;
-      }
-      try {
-        const gameRef = doc(db, "games", currentGameId);
-        const snap = await getDoc(gameRef);
-        if (!snap.exists()) return;
-        const data = snap.data();
-        const questions = data.questions || [];
-        const totalQ = questions.length;
-
-        let currentRound = data.currentRound || 1;
-        let totalRounds = data.totalRounds || 1;
-        let idx = data.currentQuestionIndex || 0;
-
-        if (currentRound >= totalRounds) {
-          alert("Already at last round.");
-          return;
-        }
-
-        currentRound += 1;
-        idx = Math.min(idx + 1, totalQ - 1);
-
-        await setDoc(gameRef, {
-          currentRound,
-          currentQuestionIndex: idx
-        }, { merge: true });
-
-        await generateCardsForAllPlayers(currentGameId, currentRound, questions[idx]);
-
-        log("Moved to round " + currentRound + ".");
-      } catch (err) {
-        console.error(err);
-        log("Error moving to next round: " + err.message);
-        alert("Error moving to next round; see log.");
-      }
-    }
-
-    async function handleEndGame() {
-      if (!currentIsAdmin || !currentGameId) {
-        alert("Only the admin can end the game.");
-        return;
-      }
-      try {
-        const gameRef = doc(db, "games", currentGameId);
-        await setDoc(gameRef, {
-          status: "finished"
-        }, { merge: true });
-
-        log("Game marked as finished.");
-      } catch (err) {
-        console.error(err);
-        log("Error ending game: " + err.message);
-        alert("Error ending game; see log.");
-      }
-    }
-
-    /************************************************
-     * 12) My round state (cards, answers)
-     ************************************************/
-    function renderMyCards() {
-      if (!myRoundState || !myRoundState.cards || myRoundState.cards.length === 0) {
-        cardsContainer.innerHTML = "(waiting for round cards)";
-        return;
-      }
-      const cards = myRoundState.cards;
-      const hasAnswered = !!myRoundState.hasAnswered;
-      const isCorrect = !!myRoundState.isCorrect;
-      const answerIndex = myRoundState.answerIndex;
-      const correctIndex = typeof myRoundState.correctIndex === "number"
-        ? myRoundState.correctIndex
-        : -1;
-
-      let html = "";
-      cards.forEach((text, i) => {
-        let extraClass = "";
-        if (hasAnswered) {
-          if (i === correctIndex) extraClass = " correct";
-          else if (i === answerIndex && !isCorrect) extraClass = " wrong";
-        }
-        const disabled = hasAnswered;
-        html += `<button class="cardBtn small${extraClass}" onclick="handleCardClick(${i})" ${disabled ? "disabled" : ""}>${text}</button>`;
-      });
-      cardsContainer.innerHTML = html;
-
-      if (!hasAnswered) {
-        roundFeedbackEl.textContent = "Choose your answer.";
-      } else if (isCorrect) {
-        roundFeedbackEl.textContent = "Correct! Wait for others.";
-      } else {
-        roundFeedbackEl.textContent = "You already answered wrong this round.";
-      }
-    }
-
-    function subscribeToMyRoundState(gameId, roundNumber) {
-      if (!gameId || !roundNumber || !currentPlayerId) return;
-      if (unsubscribeMyRound) {
-        unsubscribeMyRound();
-        unsubscribeMyRound = null;
-      }
-      const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", currentPlayerId);
-      unsubscribeMyRound = onSnapshot(psRef, (snap) => {
-        if (!snap.exists()) {
-          myRoundState = null;
-          cardsContainer.innerHTML = "(waiting for round cards)";
-          roundFeedbackEl.textContent = "Waiting for admin.";
-          return;
-        }
-        myRoundState = snap.data();
-        renderMyCards();
-      }, (err) => {
-        console.error(err);
-        log("onSnapshot (my round) error: " + err.message);
-      });
-    }
-
-    async function handleCardClick(index) {
-      if (!currentGameId || !currentPlayerId || !currentRoundNumber) return;
-      if (!myRoundState || !myRoundState.cards) return;
-
-      const now = Date.now();
-      const correctIndex = typeof myRoundState.correctIndex === "number"
-        ? myRoundState.correctIndex
-        : -1;
-      const isCorrectChoice = (index === correctIndex);
-
-      const psRef = doc(db, "games", currentGameId, "rounds", String(currentRoundNumber), "playerStates", currentPlayerId);
-      const playerRef = doc(db, "games", currentGameId, "players", currentPlayerId);
-
-      // Already answered correctly – ignore
-      if (myRoundState.hasAnswered && myRoundState.isCorrect) {
-        return;
-      }
-
-      try {
-        if (isCorrectChoice) {
-          // mark answered; admin client will award points by order
-          await setDoc(psRef, {
-            hasAnswered: true,
-            isCorrect: true,
-            answerIndex: index,
-            answerTimeMs: now
-          }, { merge: true });
-
-          roundFeedbackEl.textContent = "Correct! (+points will be assigned based on speed)";
-          log("Answered correctly at " + now + ".");
-        } else {
-          // wrong answer – apply penalty
-          const prevWrong = myRoundState.wrongCount || 0;
-          const newWrong = prevWrong + 1;
-          const penalty = -Math.pow(2, newWrong - 1); // -1, -2, -4, ...
-
-          await Promise.all([
-            setDoc(psRef, {
-              wrongCount: newWrong
-            }, { merge: true }),
-            setDoc(playerRef, {
-              score: increment(penalty),
-              totalWrongPenalty: increment(penalty)
-            }, { merge: true })
-          ]);
-
-          roundFeedbackEl.textContent = "Wrong! Penalty " + penalty + " pts (wrong #" + newWrong + " this round).";
-          log("Wrong answer, penalty " + penalty + ".");
-        }
-      } catch (err) {
-        console.error(err);
-        log("Error submitting answer: " + err.message);
-      }
-    }
-
-    /************************************************
-     * 13) Admin scoring subscription
-     ************************************************/
-    function subscribeRoundForAdminScoring(gameId, roundNumber) {
-      if (!currentIsAdmin || !gameId || !roundNumber) return;
-      if (unsubscribeRoundAdmin) {
-        unsubscribeRoundAdmin();
-        unsubscribeRoundAdmin = null;
-      }
-      const colRef = collection(db, "games", gameId, "rounds", String(roundNumber), "playerStates");
-      unsubscribeRoundAdmin = onSnapshot(colRef, (snap) => {
-        handleScoringSnapshot(gameId, roundNumber, snap).catch(err => {
-          console.error(err);
-          log("Error in scoring snapshot: " + err.message);
-        });
-      }, (err) => {
-        console.error(err);
-        log("onSnapshot (round scoring) error: " + err.message);
-      });
-    }
-
-    async function handleScoringSnapshot(gameId, roundNumber, snap) {
-      if (snap.empty) return;
-
-      const correctStates = [];
-      snap.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.isCorrect && data.answerTimeMs && typeof data.answerTimeMs === "number") {
-          correctStates.push({
-            playerId: docSnap.id,
-            data
-          });
-        }
-      });
-
-      if (correctStates.length === 0) return;
-
-      correctStates.sort((a, b) => a.data.answerTimeMs - b.data.answerTimeMs);
-
-      const awardPromises = [];
-
-      let place = 1;
-      for (const entry of correctStates) {
-        const { playerId, data } = entry;
-        if (typeof data.pointsAwarded === "number") {
-          place++;
-          continue; // already awarded
-        }
-        const points = getPointsForPlace(place);
-
-        const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", playerId);
-        const playerRef = doc(db, "games", gameId, "players", playerId);
-
-        awardPromises.push(
-          setDoc(psRef, { pointsAwarded: points }, { merge: true }),
-          setDoc(playerRef, { score: increment(points) }, { merge: true })
-        );
-
-        log("Awarding " + points + " pts to " + playerId + " (place " + place + ").");
-        place++;
-      }
-
-      if (awardPromises.length > 0) {
-        await Promise.all(awardPromises);
-      }
-    }
-
-    /************************************************
-     * 14) Visual round timer (client-side only)
-     ************************************************/
-    function startVisualTimer() {
-      stopVisualTimer();
-      let timeLeft = 30;
-      roundTimerEl.textContent = timeLeft + "s";
+    /************ Timer visual ************/
+    function startTimerVisual() {
+      stopTimerVisual();
+      let t = 30;
+      const el = $("stateTimer");
+      el.textContent = t + "s";
       timerInterval = setInterval(() => {
-        timeLeft--;
-        if (timeLeft <= 0) {
-          roundTimerEl.textContent = "Time up";
-          stopVisualTimer();
+        t--;
+        if (t <= 0) {
+          el.textContent = "Time up";
+          stopTimerVisual();
         } else {
-          roundTimerEl.textContent = timeLeft + "s";
+          el.textContent = t + "s";
         }
       }, 1000);
     }
-    function stopVisualTimer() {
+    function stopTimerVisual() {
       if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
       }
-      // don't clear text; leave last state
     }
 
-    /************************************************
-     * 15) Wire up buttons + global click handler
-     ************************************************/
-    document.getElementById('btnCreate').addEventListener('click', handleCreate);
-    document.getElementById('btnJoin').addEventListener('click', handleJoin);
-    document.getElementById('btnVoteAdmin').addEventListener('click', handleVoteAdmin);
-    document.getElementById('btnApplyAdmin').addEventListener('click', handleApplyAdmin);
-    btnStartGame.addEventListener('click', handleStartGame);
-    btnNextRound.addEventListener('click', handleNextRound);
-    btnEndGame.addEventListener('click', handleEndGame);
+    function blinkTimer() {
+      const el = $("stateTimer");
+      if (!el) return;
+      el.classList.remove("timerBlink");
+      void el.offsetWidth;
+      el.classList.add("timerBlink");
+    }
 
-    // expose handler so inline onclick can call it
-    window.handleCardClick = handleCardClick;
+    /************ Load questions from Sheets (via Apps Script) ************/
+    async function loadQuestionsFromSheets(apiUrl) {
+      // NOTE: adjust this to match your existing Apps Script response format if needed.
+      // This version assumes GET apiUrl returns JSON: { questions: [ { id, VerseRef, VerseText, Question, CorrectAnswer, ElseAnswer, Wrong1..Wrong9 } ] }
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error("Failed to fetch questions from Sheets.");
+      const data = await res.json();
+      if (!data || !Array.isArray(data.questions || data)) {
+        throw new Error("Question payload is not in expected format.");
+      }
+      // Accept either {questions:[...]} or just [...]
+      const questions = Array.isArray(data.questions) ? data.questions : data;
+      return questions;
+    }
+
+    /************ Questions -> per-player cards ************/
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function buildCardsForPlayer(q) {
+      const correct = q.CorrectAnswer || q.correctAnswer || "";
+      const elseAns = q.ElseAnswer || q.elseAnswer || "";
+      const wrongs = [
+        q.Wrong1, q.Wrong2, q.Wrong3, q.Wrong4,
+        q.Wrong5, q.Wrong6, q.Wrong7, q.Wrong8, q.Wrong9
+      ].filter(x => !!x);
+
+      if (!correct && !elseAns && wrongs.length === 0) {
+        return { cards: [], correctIndex: -1 };
+      }
+
+      let useElse = false;
+      if (elseAns) useElse = Math.random() < 0.5;
+
+      let correctText;
+      let wrongCandidates;
+
+      if (useElse && elseAns) {
+        correctText = elseAns;
+        wrongCandidates = wrongs
+          .concat(correct ? [correct] : [])
+          .filter(v => v && v !== correctText);
+      } else {
+        correctText = correct || elseAns || wrongs[0];
+        wrongCandidates = wrongs
+          .concat(elseAns ? [elseAns] : [])
+          .filter(v => v && v !== correctText);
+      }
+
+      if (wrongCandidates.length === 0) wrongCandidates = wrongs.slice();
+
+      const fallbackPool = ["I don't know","Not sure","None of these"];
+      let i = 0;
+      while (wrongCandidates.length < 3) {
+        const fallback = fallbackPool[i % fallbackPool.length];
+        if (!wrongCandidates.includes(fallback) && fallback !== correctText) {
+          wrongCandidates.push(fallback);
+        }
+        i++;
+      }
+
+      shuffle(wrongCandidates);
+      const wrongsPicked = wrongCandidates.slice(0,3);
+      const all = [correctText, ...wrongsPicked];
+      shuffle(all);
+      const correctIndex = all.indexOf(correctText);
+      return { cards: all, correctIndex };
+    }
+
+    /************ Game creation ************/
+    async function createGame() {
+      const { firstName,lastName } = getName();
+      const displayName = (firstName + " " + lastName).trim();
+      const playerId = makePlayerId(firstName,lastName);
+
+      currentPlayerId = playerId;
+      currentPlayerName = displayName;
+
+      let url = $("sheetsApiUrl").value.trim();
+      if (!url || url === "1234") url = DEFAULT_SHEETS_API_URL;
+      localStorage.setItem("sheetsApiUrl", url);
+
+      log("Creating game as " + displayName + "…");
+
+      // Load questions from Sheets
+      const questions = await loadQuestionsFromSheets(url);
+      questionsCache = questions;
+      log("Loaded " + questions.length + " questions from Sheets.");
+
+      const roundsMode = $("roundsModeSelect").value || "3";
+      currentRoundsMode = roundsMode;
+      totalRounds = (roundsMode === "all") ? questions.length : Number(roundsMode);
+
+      const gamesCol = collection(db,"games");
+      const gameDocRef = await addDoc(gamesCol,{
+        createdAt: serverTimestamp(),
+        status: "lobby",
+        roundsMode,
+        currentRound: 0,
+        totalRounds,
+        currentQuestionIndex: 0,
+        adminPlayerId: playerId,
+        adminDisplayName: displayName,
+        questions,
+        isDeleted: false
+      });
+
+      const gameId = gameDocRef.id;
+      currentGameId = gameId;
+      $("createdGameId").textContent = gameId;
+      $("stateGameId").textContent = gameId;
+      $("joinGameId").value = gameId;
+      $("currentConnection").textContent = "Connected to game " + gameId;
+
+      // register admin player
+      const pref = doc(db,"games",gameId,"players",playerId);
+      await setDoc(pref,{
+        firstName,lastName,displayName,
+        isAdmin:true,
+        score:0,
+        joinedAt:serverTimestamp()
+      }, { merge:true });
+
+      log("Registered player " + displayName + " as admin.");
+
+      subscribeGame(gameId);
+      subscribePlayers(gameId);
+      subscribeHostChat(gameId);
+    }
+
+    /************ Join existing game ************/
+    async function joinGame() {
+      const gameId = $("joinGameId").value.trim();
+      if (!gameId) {
+        alert("Enter a Game ID.");
+        return;
+      }
+
+      const { firstName,lastName } = getName();
+      const displayName = (firstName + " " + lastName).trim();
+      const playerId = makePlayerId(firstName,lastName);
+      currentPlayerId = playerId;
+      currentPlayerName = displayName;
+      currentGameId = gameId;
+
+      const gref = doc(db,"games",gameId);
+      const gSnap = await getDoc(gref);
+      if (!gSnap.exists()) {
+        alert("Game not found: " + gameId);
+        return;
+      }
+
+      const pref = doc(db,"games",gameId,"players",playerId);
+      await setDoc(pref,{
+        firstName,lastName,displayName,
+        isAdmin:false,
+        joinedAt:serverTimestamp()
+      },{merge:true});
+
+      $("stateGameId").textContent = gameId;
+      $("currentConnection").textContent = "Connected to game " + gameId;
+
+      log("Joined game " + gameId + " as " + displayName + ".");
+
+      subscribeGame(gameId);
+      subscribePlayers(gameId);
+      subscribeHostChat(gameId);
+    }
+
+    /************ Subscriptions ************/
+    function subscribeGame(gameId) {
+      if (unsubGame) { unsubGame(); unsubGame=null; }
+      const gref = doc(db,"games",gameId);
+      unsubGame = onSnapshot(gref,(snap)=>{
+        if (!snap.exists()) return;
+        const d = snap.data();
+
+        const status = d.status || "lobby";
+        const roundsMode = d.roundsMode || "3";
+        const currentRound = d.currentRound || 0;
+        const totalR = d.totalRounds || 0;
+
+        currentRoundsMode = roundsMode;
+        currentRoundNumber = currentRound;
+        totalRounds = totalR;
+        currentIsAdmin = (d.adminPlayerId === currentPlayerId);
+
+        $("stateStatus").textContent = status;
+        $("stateMode").textContent = (roundsMode === "all" ? "All questions" : roundsMode + " rounds");
+        $("stateRound").textContent = totalR ? (currentRound + " / " + totalR) : "–";
+        $("stateAdmin").textContent = d.adminDisplayName || d.adminPlayerId || "–";
+
+        const idx = d.currentQuestionIndex || 0;
+        const questions = d.questions || [];
+        const q = questions[idx] || null;
+
+        if (status === "in_progress" && currentRound > 0 && q) {
+          $("stateVerseRef").textContent = q.verseRef || q.VerseRef || "";
+          $("stateVerseText").textContent = q.verseText || q.VerseText || "";
+          $("stateQuestion").textContent = q.question || q.Question || "";
+          $("hostRoundFeedback").textContent = "Game in progress.";
+          startTimerVisual();
+        } else {
+          $("stateVerseRef").textContent = "Waiting for game to start…";
+          $("stateVerseText").textContent = "Verse and question will appear when the round starts.";
+          $("stateQuestion").textContent = "";
+          $("hostRoundFeedback").textContent = (status === "finished")
+            ? "Game finished."
+            : "Waiting for host to start game.";
+          $("answerCardsHost").innerHTML = '<div class="small">Waiting for round cards…</div>';
+          $("stateTimer").textContent = "–";
+          stopTimerVisual();
+        }
+
+        lastGameStatus = status;
+      });
+    }
+
+    function subscribePlayers(gameId) {
+      if (unsubPlayers) { unsubPlayers(); unsubPlayers=null; }
+      const col = collection(db,"games",gameId,"players");
+      unsubPlayers = onSnapshot(col,(snap)=>{
+        latestPlayers = [];
+        const voteCounts = {}; // for admin votes summary (optional)
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          const id = docSnap.id;
+          const name = (d.displayName || (d.firstName + " " + d.lastName) || "Player").trim();
+          latestPlayers.push({
+            id,
+            name,
+            score: typeof d.score==="number" ? d.score : 0,
+            isAdmin: !!d.isAdmin,
+            adminVoteFor: d.adminVoteFor || null
+          });
+          if (d.adminVoteFor) {
+            voteCounts[d.adminVoteFor] = (voteCounts[d.adminVoteFor] || 0) + 1;
+          }
+        });
+
+        renderPlayersPanelHost();
+        renderAdminVoteSelect();
+        renderAdminVotesSummary(voteCounts);
+      });
+    }
+
+    function subscribeHostChat(gameId) {
+      if (unsubHostChat) { unsubHostChat(); unsubHostChat=null; }
+      const col = collection(db,"games",gameId,"messages");
+      const qChat = query(col, orderBy("createdAt","desc"), limit(30));
+      const el = $("hostChatList");
+      unsubHostChat = onSnapshot(qChat,(snap)=>{
+        let html = "";
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          const name = d.fromName || "Player";
+          const text = d.text || "";
+          html = `<div><strong>${name}:</strong> ${text}</div>` + html;
+        });
+        el.innerHTML = html || '<div class="small">No messages yet.</div>';
+      });
+    }
+
+    // show a few most recent non-deleted rooms for convenience
+    function subscribeRoomsHost() {
+      if (unsubRoomsHost) { unsubRoomsHost(); unsubRoomsHost=null; }
+      const gamesCol = collection(db,"games");
+      const qRooms = query(gamesCol, orderBy("createdAt","desc"), limit(15));
+      const listEl = $("roomsHostList");
+      unsubRoomsHost = onSnapshot(qRooms,(snap)=>{
+        if (snap.empty) {
+          listEl.innerHTML = '<div class="small">No games yet.</div>';
+          return;
+        }
+        let html = "";
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          if (d.isDeleted) return;
+          const id = docSnap.id;
+          const status = d.status || "lobby";
+          const roundsMode = d.roundsMode || "3";
+          const adminName = d.adminDisplayName || "Unknown";
+          const labelStatus =
+            status === "in_progress" ? "In progress" :
+            status === "finished" ? "Finished" : "Lobby";
+
+          html += `
+            <div class="roomListHostItem">
+              <div class="roomListHostItemTitle">${adminName}'s room</div>
+              <div>ID: <span class="mono">${id}</span></div>
+              <div>Status: ${labelStatus} • Mode: ${roundsMode}</div>
+            </div>`;
+        });
+        listEl.innerHTML = html || '<div class="small">No active rooms.</div>';
+      });
+    }
+
+    /************ Players panel + admin voting ************/
+    function renderPlayersPanelHost() {
+      const panel = $("playersPanelHost");
+      if (!panel) return;
+      panel.innerHTML = "";
+
+      if (!latestPlayers.length) {
+        panel.innerHTML = '<div class="small">No players yet.</div>';
+        return;
+      }
+
+      const sorted = [...latestPlayers].sort((a,b)=>b.score - a.score);
+
+      sorted.forEach(p=>{
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.justifyContent = "space-between";
+        row.style.fontSize = "0.8rem";
+        row.style.marginBottom = "0.2rem";
+
+        const left = document.createElement("div");
+        const youMark = p.id === currentPlayerId ? " (you)" : "";
+        const adminMark = p.isAdmin ? " ★" : "";
+        left.textContent = `${p.name} – ${p.score || 0} pts${youMark}${adminMark}`;
+        row.appendChild(left);
+
+        // Kick button (admin only, can't kick admin)
+        if (currentIsAdmin && !p.isAdmin) {
+          const btn = document.createElement("button");
+          btn.textContent = "Kick";
+          btn.className = "secondary";
+          btn.style.fontSize = "0.7rem";
+          btn.onclick = () => kickPlayer(p.id);
+          row.appendChild(btn);
+        }
+
+        panel.appendChild(row);
+      });
+    }
+
+    function renderAdminVoteSelect() {
+      const sel = $("adminVoteSelect");
+      sel.innerHTML = '<option value="">-- choose player --</option>';
+      latestPlayers.forEach(p=>{
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name + (p.id===currentPlayerId ? " (you)" : "");
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderAdminVotesSummary(voteCounts) {
+      const span = $("adminVotesSummary");
+      if (!voteCounts || Object.keys(voteCounts).length === 0) {
+        span.textContent = "no votes yet";
+        return;
+      }
+      const parts = [];
+      for (const pid in voteCounts) {
+        const player = latestPlayers.find(p => p.id === pid);
+        const name = player ? player.name : pid;
+        parts.push(`${name}: ${voteCounts[pid]} vote(s)`);
+      }
+      span.textContent = parts.join(", ");
+    }
+
+    async function submitAdminVote() {
+      if (!currentGameId || !currentPlayerId) return;
+      const targetId = $("adminVoteSelect").value;
+      const pref = doc(db,"games",currentGameId,"players",currentPlayerId);
+      await setDoc(pref,{ adminVoteFor: targetId || null },{ merge:true });
+    }
+
+    async function applyAdminByVotes() {
+      if (!currentGameId || !currentPlayerId) return;
+      if (!currentIsAdmin) {
+        alert("Only the current admin can apply votes.");
+        return;
+      }
+      if (!latestPlayers.length) return;
+
+      const counts = {};
+      latestPlayers.forEach(p=>{
+        if (p.adminVoteFor) {
+          counts[p.adminVoteFor] = (counts[p.adminVoteFor] || 0) + 1;
+        }
+      });
+      if (Object.keys(counts).length === 0) {
+        alert("No votes yet.");
+        return;
+      }
+      let bestId = null;
+      let bestCount = -1;
+      for (const pid in counts) {
+        if (counts[pid] > bestCount) {
+          bestId = pid;
+          bestCount = counts[pid];
+        }
+      }
+      const winner = latestPlayers.find(p=>p.id===bestId);
+      if (!winner) return;
+
+      const ok = confirm(`Change admin to ${winner.name} (${bestCount} vote(s))?`);
+      if (!ok) return;
+
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{
+        adminPlayerId: winner.id,
+        adminDisplayName: winner.name
+      }, { merge:true });
+
+      await setDoc(doc(db,"games",currentGameId,"players",winner.id),{
+        isAdmin:true
+      },{merge:true});
+      await setDoc(doc(db,"games",currentGameId,"players",currentPlayerId),{
+        isAdmin:false
+      },{merge:true:true});
+
+      log("Admin changed to " + winner.name + " by votes.");
+    }
+
+    /************ Kick player (admin only) ************/
+    async function kickPlayer(playerId) {
+      if (!currentGameId || !currentPlayerId) return;
+      if (!currentIsAdmin) {
+        alert("Only the admin can kick players.");
+        return;
+      }
+      if (playerId === currentPlayerId) {
+        alert("You can’t kick yourself.");
+        return;
+      }
+      const player = latestPlayers.find(p=>p.id===playerId);
+      const name = player ? player.name : playerId;
+      const ok = confirm(`Kick ${name} from this room?`);
+      if (!ok) return;
+
+      const pref = doc(db,"games",currentGameId,"players",playerId);
+      await deleteDoc(pref);
+      log("Kicked player " + name);
+    }
+
+    /************ Round handling (simplified) ************/
+    async function startGame() {
+      if (!currentGameId) {
+        alert("Create or join a game first.");
+        return;
+      }
+      if (!currentIsAdmin) {
+        alert("Only admin can start the game.");
+        return;
+      }
+      if (!questionsCache.length) {
+        // load from game doc if needed
+        const gref = doc(db,"games",currentGameId);
+        const snap = await getDoc(gref);
+        if (snap.exists()) {
+          questionsCache = snap.data().questions || [];
+        }
+      }
+      if (!questionsCache.length) {
+        alert("No questions loaded.");
+        return;
+      }
+
+      const roundsMode = $("roundsModeSelect").value || "3";
+      currentRoundsMode = roundsMode;
+      totalRounds = (roundsMode === "all") ? questionsCache.length : Number(roundsMode);
+
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{
+        status:"in_progress",
+        currentRound:1,
+        totalRounds,
+        roundsMode
+      },{merge:true});
+
+      await generateCardsForRound(1);
+      log("Game started with " + totalRounds + " rounds.");
+    }
+
+    async function nextRound() {
+      if (!currentGameId) return;
+      if (!currentIsAdmin) {
+        alert("Only admin can change rounds.");
+        return;
+      }
+      if (!totalRounds) {
+        alert("Game not started yet.");
+        return;
+      }
+      const next = currentRoundNumber + 1;
+      if (next > totalRounds) {
+        alert("No more rounds. End the game.");
+        return;
+      }
+
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{ currentRound: next },{merge:true});
+      await generateCardsForRound(next);
+      log("Showing question #" + next);
+    }
+
+    async function endGame() {
+      if (!currentGameId) return;
+      if (!currentIsAdmin) {
+        alert("Only admin can end the game.");
+        return;
+      }
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{ status:"finished" },{merge:true});
+      stopTimerVisual();
+      $("stateTimer").textContent = "–";
+      log("Game finished.");
+    }
+
+    async function deleteGame() {
+      if (!currentGameId) return;
+      if (!currentIsAdmin) {
+        alert("Only admin can delete game (mark as deleted).");
+        return;
+      }
+      const ok = confirm("Mark this room as deleted and hide it from the lobby?");
+      if (!ok) return;
+
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{ isDeleted:true },{merge:true});
+      log("Game marked as deleted.");
+    }
+
+    async function generateCardsForRound(roundNumber) {
+      if (!currentGameId) return;
+      if (!questionsCache.length) {
+        const gref = doc(db,"games",currentGameId);
+        const snap = await getDoc(gref);
+        if (snap.exists()) {
+          questionsCache = snap.data().questions || [];
+        }
+      }
+      if (!questionsCache.length) return;
+
+      const qIndex = (roundNumber - 1) % questionsCache.length;
+      const q = questionsCache[qIndex];
+
+      const gref = doc(db,"games",currentGameId);
+      await setDoc(gref,{
+        currentQuestionIndex: qIndex,
+        currentRound: roundNumber,
+        status:"in_progress"
+      },{merge:true});
+
+      const playersCol = collection(db,"games",currentGameId,"players");
+      const snapPlayers = await getDocs(playersCol);
+      const roundRef = doc(db,"games",currentGameId,"rounds",String(roundNumber));
+      await setDoc(roundRef,{
+        questionIndex: qIndex,
+        createdAt: serverTimestamp()
+      },{merge:true});
+
+      const cardsHost = $("answerCardsHost");
+      cardsHost.innerHTML = "";
+      let hostCards = [];
+
+      for (const playerDoc of snapPlayers.docs) {
+        const pid = playerDoc.id;
+        const cardsInfo = buildCardsForPlayer(q);
+        const psRef = doc(db,"games",currentGameId,"rounds",String(roundNumber),"playerStates",pid);
+        await setDoc(psRef,{
+          cards: cardsInfo.cards,
+          correctIndex: cardsInfo.correctIndex,
+          hasAnswered:false,
+          isCorrect:false,
+          wrongCount:0
+        },{merge:true});
+
+        if (pid === currentPlayerId) hostCards = cardsInfo.cards;
+      }
+
+      if (hostCards.length) {
+        hostCards.forEach(text=>{
+          const b = document.createElement("button");
+          b.textContent = text;
+          cardsHost.appendChild(b);
+        });
+      } else {
+        cardsHost.innerHTML = '<div class="small">Cards generated. View in play.html as a normal player.</div>';
+      }
+
+      startTimerVisual();
+      blinkTimer();
+    }
+
+    /************ UI wiring ************/
+    document.addEventListener("DOMContentLoaded", () => {
+      // prefill Sheets URL from localStorage or default
+      const input = $("sheetsApiUrl");
+      if (input) {
+        const saved = localStorage.getItem("sheetsApiUrl");
+        input.value = saved || DEFAULT_SHEETS_API_URL;
+      }
+
+      $("createGameBtn").onclick = async () => {
+        try {
+          await createGame();
+        } catch (e) {
+          console.error(e);
+          alert(e.message || "Error creating game.");
+          log("Error: " + e.message);
+        }
+      };
+
+      $("joinGameBtn").onclick = async () => {
+        try {
+          await joinGame();
+        } catch (e) {
+          console.error(e);
+          alert(e.message || "Error joining game.");
+          log("Error: " + e.message);
+        }
+      };
+
+      $("submitVoteBtn").onclick = submitAdminVote;
+      $("applyAdminVotesBtn").onclick = applyAdminByVotes;
+      $("startGameBtn").onclick = startGame;
+      $("nextRoundBtn").onclick = nextRound;
+      $("endGameBtn").onclick = endGame;
+      $("deleteGameBtn").onclick = deleteGame;
+
+      subscribeRoomsHost();
+      log("Host UI ready.");
+    });
   </script>
 </body>
 </html>
