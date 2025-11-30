@@ -400,43 +400,60 @@
       return { correct, elseAns, wrongs };
     }
 
-    function buildCardsForPlayer(correct, elseAns, wrongs) {
-      const safeWrongs = (wrongs || []).filter(x => !!x);
-      if (!correct && !elseAns && safeWrongs.length === 0) {
-        return { cards: [], correctIndex: -1 };
-      }
+function buildCardsForPlayer(correct, elseAns, wrongs) {
+  const safeWrongs = (wrongs || []).filter(x => !!x);
+  if (!correct && !elseAns && safeWrongs.length === 0) {
+    return { cards: [], correctIndex: -1 };
+  }
 
-      let useElse = false;
-      if (elseAns) {
-        useElse = Math.random() < 0.5; // sometimes require "Answer is not here"
-      }
+  // Decide whether the "else" answer (e.g., "Answer is not here")
+  // should be the correct one for this player.
+  let useElse = false;
+  if (elseAns) {
+    useElse = Math.random() < 0.5;
+  }
 
-      let correctText;
-      let wrongCandidates;
+  let correctText;
+  let wrongCandidates;
 
-      if (useElse && elseAns) {
-        correctText = elseAns;
-        wrongCandidates = safeWrongs
-          .concat(correct ? [correct] : [])
-          .filter(v => v !== correctText && v !== correct);
-      } else {
-        correctText = correct || elseAns || safeWrongs[0];
-        wrongCandidates = safeWrongs
-          .concat(elseAns ? [elseAns] : [])
-          .filter(v => v !== correctText);
-      }
+  if (useElse && elseAns) {
+    // ElseAnswer is correct; wrongs are other verses (including the real ref)
+    correctText = elseAns;
+    wrongCandidates = safeWrongs
+      .concat(correct ? [correct] : [])
+      .filter(v => v && v !== correctText);
+  } else {
+    // Normal: verse reference is correct; elseAnswer can be a wrong option
+    correctText = correct || elseAns || safeWrongs[0];
+    wrongCandidates = safeWrongs
+      .concat(elseAns ? [elseAns] : [])
+      .filter(v => v && v !== correctText);
+  }
 
-      if (wrongCandidates.length === 0) {
-        wrongCandidates = safeWrongs.slice();
-      }
+  // If we still have no wrong candidates, just reuse safeWrongs
+  if (wrongCandidates.length === 0) {
+    wrongCandidates = safeWrongs.slice();
+  }
 
-      shuffle(wrongCandidates);
-      const wrongsPicked = wrongCandidates.slice(0, 3);
-      const all = [correctText, ...wrongsPicked];
-      shuffle(all);
-      const correctIndex = all.indexOf(correctText);
-      return { cards: all, correctIndex };
+  // Pad wrong candidates so we can always pick 3
+  const fallbackPool = ["I don't know", "Not sure", "None of these"];
+  let i = 0;
+  while (wrongCandidates.length < 3) {
+    const fallback = fallbackPool[i % fallbackPool.length];
+    if (!wrongCandidates.includes(fallback) && fallback !== correctText) {
+      wrongCandidates.push(fallback);
     }
+    i++;
+  }
+
+  shuffle(wrongCandidates);
+  const wrongsPicked = wrongCandidates.slice(0, 3);
+
+  const all = [correctText, ...wrongsPicked];
+  shuffle(all);
+  const correctIndex = all.indexOf(correctText);
+  return { cards: all, correctIndex };
+}
 
     let currentGameId = null;
     let currentPlayerId = null;
