@@ -14,7 +14,7 @@
     }
     h1 { margin-top: 0; }
     .panel {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
       background: #020617;
       border-radius: 12px;
@@ -82,7 +82,7 @@
     #log {
       font-size: 0.78rem;
       white-space: pre-wrap;
-      max-height: 200px;
+      max-height: 220px;
       overflow-y: auto;
       border-radius: 8px;
       border: 1px solid #1f2937;
@@ -92,6 +92,10 @@
     #question, #verseRef, #verseText {
       margin: 0.15rem 0;
     }
+    #playersList div {
+      padding: 0.1rem 0;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
@@ -99,19 +103,19 @@
     <h1>Bible Round Table – Realtime Test</h1>
     <p style="font-size:0.9rem;color:#9ca3af">
       This page tests the full pipeline: Google Sheets → Apps Script → Firebase → multiple browsers.
-      <br>Use one browser to <strong>Create Game</strong>, then another to <strong>Join</strong> with the same Game ID.
+      <br>Use one browser to <strong>Create Game</strong>, then others to <strong>Join</strong> with the same Game ID.
     </p>
 
     <div class="row">
       <div class="box">
         <div class="section-title">1. Player Info</div>
         <div class="field">
-          <div class="label">First name</div>
-          <input type="text" id="firstName" placeholder="e.g. John">
+          <div class="label">First name (max 15 chars)</div>
+          <input type="text" id="firstName" maxlength="15" placeholder="e.g. John">
         </div>
         <div class="field">
-          <div class="label">Last name</div>
-          <input type="text" id="lastName" placeholder="e.g. Kim">
+          <div class="label">Last name (max 15 chars)</div>
+          <input type="text" id="lastName" maxlength="15" placeholder="e.g. Kim">
         </div>
       </div>
 
@@ -119,7 +123,7 @@
         <div class="section-title">2. Create Game (become Admin)</div>
         <div class="field">
           <div class="label">Sheets API URL (Apps Script Web App)</div>
-          <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/AKfycbzOy5BJ9VbqUlujW2Hg4BbJM6KNdeM_LMjq5EHtafPDPuJI34NAEmDzxgbkvrSHkiPp/exec">
+          <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXX/exec">
         </div>
         <button id="btnCreate">Create Game</button>
         <div class="field" style="margin-top:0.5rem">
@@ -161,6 +165,18 @@
       </div>
 
       <div class="box">
+        <div class="section-title">Players in this game</div>
+        <div class="label">You</div>
+        <div class="mono" id="youName">–</div>
+        <div class="mono" id="youId" style="font-size:0.75rem;color:#9ca3af;">–</div>
+
+        <div class="label" style="margin-top:0.5rem">All players</div>
+        <div id="playersList" style="font-size:0.85rem;color:#e5e7eb;">
+          (none yet)
+        </div>
+      </div>
+
+      <div class="box">
         <div class="section-title">Debug Log</div>
         <div id="log"></div>
       </div>
@@ -172,6 +188,7 @@
     /************************************************
      * 1) Firebase setup – paste your config here
      ************************************************/
+    // ⬇️ REPLACE THIS OBJECT with the firebaseConfig you copied from Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
       authDomain: "christian-roundtable.firebaseapp.com",
@@ -182,7 +199,6 @@
       measurementId: "G-JT29F5HZGE"
     };
 
-    // Import Firebase modules from CDN (modular v9+)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
       getFirestore,
@@ -199,7 +215,7 @@
     const db = getFirestore(app);
 
     /************************************************
-     * 2) Small helpers
+     * 2) Small helpers & state
      ************************************************/
     function log(msg) {
       const el = document.getElementById('log');
@@ -208,17 +224,60 @@
     }
 
     function getPlayerName() {
-      const f = document.getElementById('firstName').value.trim() || "Anon";
-      const l = document.getElementById('lastName').value.trim() || "Player";
+      let f = document.getElementById('firstName').value.trim() || "Anon";
+      let l = document.getElementById('lastName').value.trim() || "Player";
+      // Enforce max 15 chars just in case
+      f = f.slice(0, 15);
+      l = l.slice(0, 15);
       return { firstName: f, lastName: l };
     }
 
-    let currentGameDocRef = null;
+    function makePlayerId(firstName, lastName) {
+      const raw = (firstName + "_" + lastName).toLowerCase();
+      // Remove spaces and characters Firestore doesn't like
+      return raw.replace(/[^a-z0-9_]/g, "").slice(0, 30) || "player_" + Math.random().toString(36).slice(2, 10);
+    }
+
+    let currentGameId = null;
+    let currentPlayerId = null;
+    let currentPlayerDisplayName = null;
+
     let unsubscribeGame = null;
+    let unsubscribePlayers = null;
 
     /************************************************
-     * 3) Create Game – fetch questions from Sheets,
-     *    store the list in Firestore
+     * 3) Player registration
+     ************************************************/
+    async function registerPlayer(gameId, isAdmin) {
+      const { firstName, lastName } = getPlayerName();
+      const displayName = (firstName + " " + lastName).trim();
+      const playerId = makePlayerId(firstName, lastName);
+
+      const playersCol = collection(db, "games", gameId, "players");
+      const playerRef = doc(playersCol, playerId);
+
+      await setDoc(playerRef, {
+        firstName,
+        lastName,
+        displayName,
+        isAdmin: !!isAdmin,
+        joinedAt: serverTimestamp(),
+        score: 0,
+        totalWrongPenalty: 0,
+        totalCorrectTimeMs: 0
+      }, { merge: true });
+
+      currentPlayerId = playerId;
+      currentPlayerDisplayName = displayName;
+
+      document.getElementById('youName').textContent = displayName + (isAdmin ? " (admin)" : "");
+      document.getElementById('youId').textContent = "Player ID: " + playerId;
+
+      log("Registered player " + displayName + " with ID " + playerId + (isAdmin ? " [admin]" : ""));
+    }
+
+    /************************************************
+     * 4) Create Game – fetch questions + create admin player
      ************************************************/
     async function handleCreate() {
       const scriptUrl = document.getElementById('scriptUrl').value.trim();
@@ -230,8 +289,8 @@
       const { firstName, lastName } = getPlayerName();
       log("Creating game as " + firstName + " " + lastName + "...");
 
-      // 1) Fetch questions from Apps Script API
       try {
+        // 1) Fetch questions from Apps Script API
         const res = await fetch(scriptUrl + "?action=getQuestions");
         if (!res.ok) throw new Error("HTTP " + res.status);
         const questions = await res.json();
@@ -242,23 +301,31 @@
           return;
         }
 
-        // 2) Create a game doc in Firestore
+        // 2) Create game doc
         const gamesCol = collection(db, "games");
         const gameDoc = await addDoc(gamesCol, {
           createdAt: serverTimestamp(),
           status: "lobby",
-          adminName: firstName + " " + lastName,
+          adminDisplayName: firstName + " " + lastName,
           currentQuestionIndex: 0,
-          questions: questions   // store whole list for now
+          questions: questions
         });
 
         const gameId = gameDoc.id;
+        currentGameId = gameId;
+
         document.getElementById('createdGameId').textContent = gameId;
         document.getElementById('joinGameId').value = gameId;
         document.getElementById('status').textContent = "Created game " + gameId;
+        document.getElementById('currentGameId').textContent = gameId;
         log("Game created with ID: " + gameId);
 
+        // 3) Register creator as admin player
+        await registerPlayer(gameId, true);
+
+        // 4) Subscribe to game + players
         subscribeToGame(gameId);
+        subscribeToPlayers(gameId);
       } catch (err) {
         console.error(err);
         log("Error creating game: " + err.message);
@@ -267,7 +334,7 @@
     }
 
     /************************************************
-     * 4) Join existing game
+     * 5) Join existing game – register as player
      ************************************************/
     async function handleJoin() {
       const gameId = document.getElementById('joinGameId').value.trim();
@@ -275,22 +342,41 @@
         alert("Enter a Game ID to join.");
         return;
       }
-      subscribeToGame(gameId);
+
+      try {
+        const gameRef = doc(db, "games", gameId);
+        const snap = await getDoc(gameRef);
+        if (!snap.exists()) {
+          alert("Game not found. Check the Game ID.");
+          return;
+        }
+
+        currentGameId = gameId;
+        document.getElementById('currentGameId').textContent = gameId;
+        document.getElementById('status').textContent = "Joining game " + gameId + "...";
+
+        // Register player (non-admin)
+        await registerPlayer(gameId, false);
+
+        // Subscribe to game + players
+        subscribeToGame(gameId);
+        subscribeToPlayers(gameId);
+      } catch (err) {
+        console.error(err);
+        log("Error joining game: " + err.message);
+        alert("Error joining game; see log.");
+      }
     }
 
     /************************************************
-     * 5) Subscribe in realtime to a game document
+     * 6) Subscribe to game document (questions)
      ************************************************/
     function subscribeToGame(gameId) {
       if (unsubscribeGame) {
         unsubscribeGame();
         unsubscribeGame = null;
       }
-
       const gameRef = doc(db, "games", gameId);
-      currentGameDocRef = gameRef;
-      document.getElementById('currentGameId').textContent = gameId;
-      document.getElementById('status').textContent = "Connecting to game " + gameId + "...";
 
       unsubscribeGame = onSnapshot(gameRef, (snap) => {
         if (!snap.exists()) {
@@ -319,12 +405,47 @@
       }, (err) => {
         console.error(err);
         document.getElementById('status').textContent = "Error listening to game.";
-        log("onSnapshot error: " + err.message);
+        log("onSnapshot (game) error: " + err.message);
       });
     }
 
     /************************************************
-     * 6) Wire up buttons
+     * 7) Subscribe to players collection
+     ************************************************/
+    function subscribeToPlayers(gameId) {
+      if (unsubscribePlayers) {
+        unsubscribePlayers();
+        unsubscribePlayers = null;
+      }
+      const playersCol = collection(db, "games", gameId, "players");
+
+      unsubscribePlayers = onSnapshot(playersCol, (snap) => {
+        const listEl = document.getElementById('playersList');
+
+        if (snap.empty) {
+          listEl.textContent = "(no players yet)";
+          return;
+        }
+
+        let html = "";
+        snap.forEach((docSnap) => {
+          const p = docSnap.data();
+          const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
+          const isYou = (docSnap.id === currentPlayerId);
+          const isAdmin = !!p.isAdmin;
+
+          html += `<div>${name}${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
+        });
+
+        listEl.innerHTML = html;
+      }, (err) => {
+        console.error(err);
+        log("onSnapshot (players) error: " + err.message);
+      });
+    }
+
+    /************************************************
+     * 8) Wire up buttons
      ************************************************/
     document.getElementById('btnCreate').addEventListener('click', handleCreate);
     document.getElementById('btnJoin').addEventListener('click', handleJoin);
