@@ -22,10 +22,10 @@
       padding: 1rem 1.25rem;
       box-shadow: 0 20px 50px rgba(0,0,0,0.7);
     }
-    input, button {
+    input, button, select {
       font: inherit;
     }
-    input[type="text"] {
+    input[type="text"], select {
       padding: 0.4rem 0.5rem;
       border-radius: 999px;
       border: 1px solid #475569;
@@ -47,6 +47,10 @@
     button.secondary {
       background: #1e293b;
       color: #e5e7eb;
+    }
+    button.small {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.8rem;
     }
     .row {
       display: flex;
@@ -96,13 +100,24 @@
       padding: 0.1rem 0;
       font-size: 0.85rem;
     }
+    #adminControls {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #1f2937;
+      display: none;
+    }
+    #adminVotesList div {
+      padding: 0.1rem 0;
+      font-size: 0.8rem;
+      color: #cbd5f5;
+    }
   </style>
 </head>
 <body>
   <div class="panel">
     <h1>Bible Round Table – Realtime Test</h1>
     <p style="font-size:0.9rem;color:#9ca3af">
-      This page tests the full pipeline: Google Sheets → Apps Script → Firebase → multiple browsers.
+      This page tests: Google Sheets → Apps Script → Firebase → multiplayer.
       <br>Use one browser to <strong>Create Game</strong>, then others to <strong>Join</strong> with the same Game ID.
     </p>
 
@@ -120,7 +135,7 @@
       </div>
 
       <div class="box">
-        <div class="section-title">2. Create Game (become Admin)</div>
+        <div class="section-title">2. Create Game (become initial Admin)</div>
         <div class="field">
           <div class="label">Sheets API URL (Apps Script Web App)</div>
           <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXX/exec">
@@ -154,6 +169,9 @@
         <div class="label">Game ID</div>
         <div class="mono" id="currentGameId">–</div>
 
+        <div class="label" style="margin-top:0.2rem">Current admin</div>
+        <div id="currentAdmin">–</div>
+
         <div class="label" style="margin-top:0.4rem">Verse reference</div>
         <div id="verseRef">–</div>
 
@@ -174,6 +192,28 @@
         <div id="playersList" style="font-size:0.85rem;color:#e5e7eb;">
           (none yet)
         </div>
+
+        <div id="adminVoting" style="margin-top:0.75rem;">
+          <div class="section-title" style="font-size:0.85rem;">Admin voting</div>
+          <div class="field">
+            <div class="label">Vote for admin</div>
+            <select id="adminVoteSelect">
+              <option value="">-- choose player --</option>
+            </select>
+            <button class="small secondary" id="btnVoteAdmin">Submit vote</button>
+          </div>
+          <div class="field">
+            <div class="label">Current votes</div>
+            <div id="adminVotesList">(no votes yet)</div>
+          </div>
+          <div id="adminControls">
+            <div class="label">Admin controls</div>
+            <button class="small" id="btnApplyAdmin">Apply admin by votes</button>
+            <div style="font-size:0.75rem;color:#9ca3af;margin-top:0.25rem;">
+              (You are admin – this will set the player with the most votes as new admin.)
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="box">
@@ -188,16 +228,15 @@
     /************************************************
      * 1) Firebase setup – paste your config here
      ************************************************/
-    // ⬇️ REPLACE THIS OBJECT with the firebaseConfig you copied from Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
-      authDomain: "christian-roundtable.firebaseapp.com",
-      projectId: "christian-roundtable",
-      storageBucket: "christian-roundtable.firebasestorage.app",
-      messagingSenderId: "981074913898",
-      appId: "1:981074913898:web:52183899c18e5cd0aff813",
-      measurementId: "G-JT29F5HZGE"
-    };
+      const firebaseConfig = {
+        apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
+        authDomain: "christian-roundtable.firebaseapp.com",
+        projectId: "christian-roundtable",
+        storageBucket: "christian-roundtable.firebasestorage.app",
+        messagingSenderId: "981074913898",
+        appId: "1:981074913898:web:52183899c18e5cd0aff813",
+        measurementId: "G-JT29F5HZGE"
+      };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
@@ -215,18 +254,17 @@
     const db = getFirestore(app);
 
     /************************************************
-     * 2) Small helpers & state
+     * 2) Helpers & state
      ************************************************/
     function log(msg) {
       const el = document.getElementById('log');
-      el.textContent += msg + "\n";
+      el.textContent += msg + "\\n";
       el.scrollTop = el.scrollHeight;
     }
 
     function getPlayerName() {
       let f = document.getElementById('firstName').value.trim() || "Anon";
       let l = document.getElementById('lastName').value.trim() || "Player";
-      // Enforce max 15 chars just in case
       f = f.slice(0, 15);
       l = l.slice(0, 15);
       return { firstName: f, lastName: l };
@@ -234,21 +272,26 @@
 
     function makePlayerId(firstName, lastName) {
       const raw = (firstName + "_" + lastName).toLowerCase();
-      // Remove spaces and characters Firestore doesn't like
       return raw.replace(/[^a-z0-9_]/g, "").slice(0, 30) || "player_" + Math.random().toString(36).slice(2, 10);
     }
 
     let currentGameId = null;
     let currentPlayerId = null;
     let currentPlayerDisplayName = null;
+    let currentIsAdmin = false;
 
     let unsubscribeGame = null;
     let unsubscribePlayers = null;
+    let latestPlayersSnapshot = null;
+
+    const adminControlsEl = document.getElementById('adminControls');
+    const adminVoteSelect = document.getElementById('adminVoteSelect');
+    const adminVotesListEl = document.getElementById('adminVotesList');
 
     /************************************************
      * 3) Player registration
      ************************************************/
-    async function registerPlayer(gameId, isAdmin) {
+    async function registerPlayer(gameId, isAdminInitial) {
       const { firstName, lastName } = getPlayerName();
       const displayName = (firstName + " " + lastName).trim();
       const playerId = makePlayerId(firstName, lastName);
@@ -260,7 +303,7 @@
         firstName,
         lastName,
         displayName,
-        isAdmin: !!isAdmin,
+        isAdmin: !!isAdminInitial,
         joinedAt: serverTimestamp(),
         score: 0,
         totalWrongPenalty: 0,
@@ -270,10 +313,7 @@
       currentPlayerId = playerId;
       currentPlayerDisplayName = displayName;
 
-      document.getElementById('youName').textContent = displayName + (isAdmin ? " (admin)" : "");
-      document.getElementById('youId').textContent = "Player ID: " + playerId;
-
-      log("Registered player " + displayName + " with ID " + playerId + (isAdmin ? " [admin]" : ""));
+      log("Registered player " + displayName + " with ID " + playerId + (isAdminInitial ? " [admin]" : ""));
     }
 
     /************************************************
@@ -287,10 +327,12 @@
       }
 
       const { firstName, lastName } = getPlayerName();
-      log("Creating game as " + firstName + " " + lastName + "...");
+      const adminDisplayName = (firstName + " " + lastName).trim();
+      const adminPlayerId = makePlayerId(firstName, lastName);
+
+      log("Creating game as " + adminDisplayName + "...");
 
       try {
-        // 1) Fetch questions from Apps Script API
         const res = await fetch(scriptUrl + "?action=getQuestions");
         if (!res.ok) throw new Error("HTTP " + res.status);
         const questions = await res.json();
@@ -301,14 +343,14 @@
           return;
         }
 
-        // 2) Create game doc
         const gamesCol = collection(db, "games");
         const gameDoc = await addDoc(gamesCol, {
           createdAt: serverTimestamp(),
           status: "lobby",
-          adminDisplayName: firstName + " " + lastName,
+          adminDisplayName,
+          adminPlayerId,
           currentQuestionIndex: 0,
-          questions: questions
+          questions
         });
 
         const gameId = gameDoc.id;
@@ -318,12 +360,10 @@
         document.getElementById('joinGameId').value = gameId;
         document.getElementById('status').textContent = "Created game " + gameId;
         document.getElementById('currentGameId').textContent = gameId;
-        log("Game created with ID: " + gameId);
+        document.getElementById('currentAdmin').textContent = adminDisplayName;
 
-        // 3) Register creator as admin player
         await registerPlayer(gameId, true);
 
-        // 4) Subscribe to game + players
         subscribeToGame(gameId);
         subscribeToPlayers(gameId);
       } catch (err) {
@@ -351,14 +391,15 @@
           return;
         }
 
+        const data = snap.data();
+        document.getElementById('currentAdmin').textContent = data.adminDisplayName || "–";
+
         currentGameId = gameId;
         document.getElementById('currentGameId').textContent = gameId;
         document.getElementById('status').textContent = "Joining game " + gameId + "...";
 
-        // Register player (non-admin)
         await registerPlayer(gameId, false);
 
-        // Subscribe to game + players
         subscribeToGame(gameId);
         subscribeToPlayers(gameId);
       } catch (err) {
@@ -369,7 +410,7 @@
     }
 
     /************************************************
-     * 6) Subscribe to game document (questions)
+     * 6) Subscribe to game doc (questions + admin)
      ************************************************/
     function subscribeToGame(gameId) {
       if (unsubscribeGame) {
@@ -387,6 +428,9 @@
         const data = snap.data();
         document.getElementById('status').textContent = "Connected to game " + gameId;
 
+        const adminName = data.adminDisplayName || "–";
+        document.getElementById('currentAdmin').textContent = adminName;
+
         const idx = data.currentQuestionIndex || 0;
         const qList = data.questions || [];
         const q = qList[idx] || null;
@@ -401,6 +445,16 @@
           document.getElementById('verseText').textContent = "–";
           document.getElementById('question').textContent = "No question at this index.";
           log("No question at index " + idx);
+        }
+
+        // also update currentIsAdmin flag here if we know adminPlayerId
+        if (data.adminPlayerId && currentPlayerId) {
+          currentIsAdmin = (data.adminPlayerId === currentPlayerId);
+          adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
+          const youNameEl = document.getElementById('youName');
+          if (currentPlayerDisplayName) {
+            youNameEl.textContent = currentPlayerDisplayName + (currentIsAdmin ? " (admin)" : "");
+          }
         }
       }, (err) => {
         console.error(err);
@@ -420,7 +474,11 @@
       const playersCol = collection(db, "games", gameId, "players");
 
       unsubscribePlayers = onSnapshot(playersCol, (snap) => {
+        latestPlayersSnapshot = snap;
+
         const listEl = document.getElementById('playersList');
+        const youNameEl = document.getElementById('youName');
+        const youIdEl = document.getElementById('youId');
 
         if (snap.empty) {
           listEl.textContent = "(no players yet)";
@@ -428,16 +486,46 @@
         }
 
         let html = "";
+        let isYouAdmin = false;
+
+        // populate admin vote dropdown
+        const options = [];
         snap.forEach((docSnap) => {
           const p = docSnap.data();
+          const pid = docSnap.id;
           const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
-          const isYou = (docSnap.id === currentPlayerId);
+          const isYou = (pid === currentPlayerId);
           const isAdmin = !!p.isAdmin;
 
+          if (isYou && isAdmin) isYouAdmin = true;
+
           html += `<div>${name}${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
+
+          options.push({ id: pid, name });
         });
 
         listEl.innerHTML = html;
+
+        // update "you" display
+        if (currentPlayerDisplayName) {
+          youNameEl.textContent = currentPlayerDisplayName + (isYouAdmin ? " (admin)" : "");
+          youIdEl.textContent = "Player ID: " + (currentPlayerId || "unknown");
+        }
+
+        currentIsAdmin = isYouAdmin;
+        adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
+
+        // update dropdown options
+        adminVoteSelect.innerHTML = '<option value="">-- choose player --</option>';
+        options.forEach((opt) => {
+          const o = document.createElement('option');
+          o.value = opt.id;
+          o.textContent = opt.name;
+          adminVoteSelect.appendChild(o);
+        });
+
+        // recompute votes display
+        renderAdminVotes();
       }, (err) => {
         console.error(err);
         log("onSnapshot (players) error: " + err.message);
@@ -445,10 +533,171 @@
     }
 
     /************************************************
-     * 8) Wire up buttons
+     * 8) Admin voting – write vote
+     ************************************************/
+    async function handleVoteAdmin() {
+      if (!currentGameId || !currentPlayerId) {
+        alert("Join or create a game first.");
+        return;
+      }
+      const chosenId = adminVoteSelect.value;
+      if (!chosenId) {
+        alert("Choose a player to vote for.");
+        return;
+      }
+
+      try {
+        const playerRef = doc(db, "games", currentGameId, "players", currentPlayerId);
+        await setDoc(playerRef, {
+          adminVoteFor: chosenId
+        }, { merge: true });
+
+        log("You voted for admin: " + chosenId);
+      } catch (err) {
+        console.error(err);
+        log("Error submitting vote: " + err.message);
+        alert("Error submitting vote; see log.");
+      }
+    }
+
+    /************************************************
+     * 9) Render admin votes from latest snapshot
+     ************************************************/
+    function renderAdminVotes() {
+      if (!latestPlayersSnapshot || latestPlayersSnapshot.empty) {
+        adminVotesListEl.textContent = "(no votes yet)";
+        return;
+      }
+
+      const players = {};
+      const voteCounts = {};
+
+      latestPlayersSnapshot.forEach((docSnap) => {
+        const pid = docSnap.id;
+        const p = docSnap.data();
+        const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
+        players[pid] = name;
+
+        if (p.adminVoteFor) {
+          const cid = p.adminVoteFor;
+          voteCounts[cid] = (voteCounts[cid] || 0) + 1;
+        }
+      });
+
+      if (Object.keys(voteCounts).length === 0) {
+        adminVotesListEl.textContent = "(no votes yet)";
+        return;
+      }
+
+      let html = "";
+      Object.keys(voteCounts).forEach((pid) => {
+        const count = voteCounts[pid];
+        const name = players[pid] || pid;
+        html += `<div>${name}: ${count} vote(s)</div>`;
+      });
+
+      adminVotesListEl.innerHTML = html;
+    }
+
+    /************************************************
+     * 10) Admin-only: apply admin by votes
+     ************************************************/
+    async function handleApplyAdmin() {
+      if (!currentIsAdmin) {
+        alert("Only the current admin can apply votes.");
+        return;
+      }
+      if (!currentGameId || !latestPlayersSnapshot) {
+        alert("No game or players loaded.");
+        return;
+      }
+
+      const players = {};
+      const voteCounts = {};
+
+      latestPlayersSnapshot.forEach((docSnap) => {
+        const pid = docSnap.id;
+        const p = docSnap.data();
+        const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
+        players[pid] = { name };
+
+        if (p.adminVoteFor) {
+          const cid = p.adminVoteFor;
+          voteCounts[cid] = (voteCounts[cid] || 0) + 1;
+        }
+      });
+
+      if (Object.keys(voteCounts).length === 0) {
+        alert("No votes have been cast yet.");
+        return;
+      }
+
+      // find player with max votes
+      let winnerId = null;
+      let maxVotes = 0;
+      Object.keys(voteCounts).forEach((pid) => {
+        const count = voteCounts[pid];
+        if (count > maxVotes) {
+          maxVotes = count;
+          winnerId = pid;
+        } else if (count === maxVotes && maxVotes > 0) {
+          // tie – keep as-is, but we'll handle below
+        }
+      });
+
+      if (!winnerId) {
+        alert("Could not determine a winner.");
+        return;
+      }
+
+      // check tie
+      const tied = Object.values(voteCounts).filter(v => v === maxVotes).length;
+      if (tied > 1) {
+        alert("There is a tie in votes. Resolve tie first.");
+        return;
+      }
+
+      const winnerName = (players[winnerId] && players[winnerId].name) || winnerId;
+
+      if (!confirm("Set new admin to: " + winnerName + " (" + maxVotes + " vote(s))?")) {
+        return;
+      }
+
+      try {
+        // update game doc
+        const gameRef = doc(db, "games", currentGameId);
+        await setDoc(gameRef, {
+          adminPlayerId: winnerId,
+          adminDisplayName: winnerName
+        }, { merge: true });
+
+        // update players' isAdmin flags
+        const batchPromises = [];
+        latestPlayersSnapshot.forEach((docSnap) => {
+          const pid = docSnap.id;
+          const pref = doc(db, "games", currentGameId, "players", pid);
+          batchPromises.push(setDoc(pref, {
+            isAdmin: pid === winnerId
+          }, { merge: true }));
+        });
+
+        await Promise.all(batchPromises);
+
+        log("Admin changed to " + winnerName + " by votes.");
+      } catch (err) {
+        console.error(err);
+        log("Error applying admin: " + err.message);
+        alert("Error applying admin; see log.");
+      }
+    }
+
+    /************************************************
+     * 11) Wire up buttons
      ************************************************/
     document.getElementById('btnCreate').addEventListener('click', handleCreate);
     document.getElementById('btnJoin').addEventListener('click', handleJoin);
+    document.getElementById('btnVoteAdmin').addEventListener('click', handleVoteAdmin);
+    document.getElementById('btnApplyAdmin').addEventListener('click', handleApplyAdmin);
   </script>
 </body>
 </html>
