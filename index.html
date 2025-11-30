@@ -35,7 +35,7 @@
       max-width: 260px;
     }
     button {
-      margin-top: 0.4rem;
+      margin-top: 0.35rem;
       padding: 0.4rem 0.8rem;
       border-radius: 999px;
       border: none;
@@ -51,6 +51,27 @@
     button.small {
       padding: 0.25rem 0.6rem;
       font-size: 0.8rem;
+    }
+    button.cardBtn {
+      border-radius: 12px;
+      padding: 0.55rem 0.75rem;
+      background: #020617;
+      border: 1px solid #475569;
+      color: #e5e7eb;
+      text-align: left;
+      width: 100%;
+      max-width: 260px;
+      white-space: normal;
+    }
+    button.cardBtn.correct {
+      border-color: #22c55e;
+    }
+    button.cardBtn.wrong {
+      border-color: #f97316;
+    }
+    button.cardBtn:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
     .row {
       display: flex;
@@ -117,6 +138,15 @@
       border-top: 1px dashed #1f2937;
       display: none;
     }
+    #cardsContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+    #roundTimer {
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -171,7 +201,7 @@
 
     <div class="row">
       <div class="box">
-        <div class="section-title">Shared Game State (first question)</div>
+        <div class="section-title">Shared Game State</div>
         <div class="label">Game ID</div>
         <div class="mono" id="currentGameId">–</div>
 
@@ -183,6 +213,9 @@
 
         <div class="label" style="margin-top:0.2rem">Mode</div>
         <div id="roundMode">–</div>
+
+        <div class="label" style="margin-top:0.2rem">Timer (visual only for now)</div>
+        <div id="roundTimer">–</div>
 
         <div class="label" style="margin-top:0.3rem">Current admin</div>
         <div id="currentAdmin">–</div>
@@ -257,22 +290,43 @@
         <div id="log"></div>
       </div>
     </div>
+
+    <div class="row" style="margin-top:1rem;">
+      <div class="box">
+        <div class="section-title">Your answer cards (this round)</div>
+        <div class="label">Click one card to answer. Wrong answers apply penalties.</div>
+        <div id="cardsContainer">
+          (waiting for game to start)
+        </div>
+        <div class="label" style="margin-top:0.5rem">Round feedback</div>
+        <div id="roundFeedback">–</div>
+      </div>
+      <div class="box">
+        <div class="section-title">Round notes</div>
+        <p style="font-size:0.8rem;color:#9ca3af;">
+          • First correct answer: +10 pts<br>
+          • 2nd: +5 pts, 3rd: +3 pts<br>
+          • 4th–5th: +1 pt, 6+ : 0 pts<br>
+          • Wrong answers: −1, then −2, then −4, etc. per round (doubles each time).
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Firebase + app logic -->
   <script type="module">
     /************************************************
-     * 1) Firebase setup – paste your config here
+     * 1) Firebase setup – USE YOUR CONFIG HERE
      ************************************************/
-      const firebaseConfig = {
-        apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
-        authDomain: "christian-roundtable.firebaseapp.com",
-        projectId: "christian-roundtable",
-        storageBucket: "christian-roundtable.firebasestorage.app",
-        messagingSenderId: "981074913898",
-        appId: "1:981074913898:web:52183899c18e5cd0aff813",
-        measurementId: "G-JT29F5HZGE"
-      };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
+      authDomain: "christian-roundtable.firebaseapp.com",
+      projectId: "christian-roundtable",
+      storageBucket: "christian-roundtable.firebasestorage.app",
+      messagingSenderId: "981074913898",
+      appId: "1:981074913898:web:52183899c18e5cd0aff813",
+      measurementId: "G-JT29F5HZGE"
+    };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
@@ -283,7 +337,8 @@
       setDoc,
       getDoc,
       onSnapshot,
-      serverTimestamp
+      serverTimestamp,
+      increment
     } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
@@ -311,14 +366,91 @@
       return raw.replace(/[^a-z0-9_]/g, "").slice(0, 30) || "player_" + Math.random().toString(36).slice(2, 10);
     }
 
+    function getPointsForPlace(place) {
+      if (place === 1) return 10;
+      if (place === 2) return 5;
+      if (place === 3) return 3;
+      if (place === 4 || place === 5) return 1;
+      return 0;
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function extractOptionsFromQuestion(q) {
+      const correct =
+        q.correctAnswer || q.CorrectAnswer || q.correct || q.answer || "";
+      const elseAns =
+        q.ElseAnswer || q.elseAnswer || null;
+      const wrongs = [];
+      const keys = [
+        "Wrong1","Wrong2","Wrong3","Wrong4","Wrong5",
+        "Wrong6","Wrong7","Wrong8","Wrong9",
+        "wrong1","wrong2","wrong3","wrong4","wrong5",
+        "wrong6","wrong7","wrong8","wrong9"
+      ];
+      keys.forEach(k => {
+        if (q[k]) wrongs.push(q[k]);
+      });
+      return { correct, elseAns, wrongs };
+    }
+
+    function buildCardsForPlayer(correct, elseAns, wrongs) {
+      const safeWrongs = (wrongs || []).filter(x => !!x);
+      if (!correct && !elseAns && safeWrongs.length === 0) {
+        return { cards: [], correctIndex: -1 };
+      }
+
+      let useElse = false;
+      if (elseAns) {
+        useElse = Math.random() < 0.5; // sometimes require "Answer is not here"
+      }
+
+      let correctText;
+      let wrongCandidates;
+
+      if (useElse && elseAns) {
+        correctText = elseAns;
+        wrongCandidates = safeWrongs
+          .concat(correct ? [correct] : [])
+          .filter(v => v !== correctText && v !== correct);
+      } else {
+        correctText = correct || elseAns || safeWrongs[0];
+        wrongCandidates = safeWrongs
+          .concat(elseAns ? [elseAns] : [])
+          .filter(v => v !== correctText);
+      }
+
+      if (wrongCandidates.length === 0) {
+        wrongCandidates = safeWrongs.slice();
+      }
+
+      shuffle(wrongCandidates);
+      const wrongsPicked = wrongCandidates.slice(0, 3);
+      const all = [correctText, ...wrongsPicked];
+      shuffle(all);
+      const correctIndex = all.indexOf(correctText);
+      return { cards: all, correctIndex };
+    }
+
     let currentGameId = null;
     let currentPlayerId = null;
     let currentPlayerDisplayName = null;
     let currentIsAdmin = false;
+    let currentRoundNumber = 0;
 
     let unsubscribeGame = null;
     let unsubscribePlayers = null;
     let latestPlayersSnapshot = null;
+
+    let unsubscribeMyRound = null;
+    let unsubscribeRoundAdmin = null;
+    let myRoundState = null;
 
     const adminControlsEl = document.getElementById('adminControls');
     const adminVoteSelect = document.getElementById('adminVoteSelect');
@@ -333,6 +465,11 @@
     const btnStartGame = document.getElementById('btnStartGame');
     const btnNextRound = document.getElementById('btnNextRound');
     const btnEndGame = document.getElementById('btnEndGame');
+    const roundTimerEl = document.getElementById('roundTimer');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const roundFeedbackEl = document.getElementById('roundFeedback');
+
+    let timerInterval = null;
 
     /************************************************
      * 3) Player registration
@@ -363,7 +500,7 @@
     }
 
     /************************************************
-     * 4) Create game – fetch questions, set initial admin
+     * 4) Create game – fetch questions, set admin
      ************************************************/
     async function handleCreate() {
       const scriptUrl = document.getElementById('scriptUrl').value.trim();
@@ -480,7 +617,6 @@
         const adminName = data.adminDisplayName || "–";
         document.getElementById('currentAdmin').textContent = adminName;
 
-        // game status + rounds
         const status = data.status || "lobby";
         gameStatusEl.textContent = status === "in_progress" ? "In progress" :
                                    status === "finished" ? "Finished" : "Lobby";
@@ -490,6 +626,8 @@
 
         const totalRounds = data.totalRounds || 0;
         const currentRound = data.currentRound || 0;
+        currentRoundNumber = currentRound;
+
         if (status === "in_progress") {
           roundInfoEl.textContent = "Round " + currentRound + " of " + totalRounds;
         } else if (status === "finished") {
@@ -498,15 +636,14 @@
           roundInfoEl.textContent = "Not started";
         }
 
-        // question
         const idx = data.currentQuestionIndex || 0;
         const qList = data.questions || [];
         const q = qList[idx] || null;
 
         if (q) {
-          document.getElementById('verseRef').textContent = q.verseRef || "–";
-          document.getElementById('verseText').textContent = q.verseText || "–";
-          document.getElementById('question').textContent = q.question || "–";
+          document.getElementById('verseRef').textContent = q.verseRef || q.VerseRef || "–";
+          document.getElementById('verseText').textContent = q.verseText || q.VerseText || "–";
+          document.getElementById('question').textContent = q.question || q.Question || "–";
           log("Showing question #" + (idx + 1) + " (" + (q.id || "no id") + ")");
         } else {
           document.getElementById('verseRef').textContent = "–";
@@ -515,7 +652,6 @@
           log("No question at index " + idx);
         }
 
-        // admin flag based on adminPlayerId
         if (data.adminPlayerId && currentPlayerId) {
           currentIsAdmin = (data.adminPlayerId === currentPlayerId);
           adminControlsEl.style.display = currentIsAdmin ? "block" : "none";
@@ -527,7 +663,6 @@
           }
         }
 
-        // update game-controls buttons
         if (currentIsAdmin) {
           roundsModeSelect.value = roundsMode;
           if (status === "lobby") {
@@ -546,6 +681,26 @@
             btnEndGame.disabled = true;
             gameHintEl.textContent = "Game finished.";
           }
+        }
+
+        // Timer (visual, simple 30s countdown reset per round)
+        if (status === "in_progress" && currentRound > 0) {
+          startVisualTimer();
+        } else {
+          stopVisualTimer();
+        }
+
+        // subscribe to my round state + admin scoring
+        if (status === "in_progress" && currentRound > 0) {
+          if (currentGameId && currentPlayerId) {
+            subscribeToMyRoundState(currentGameId, currentRound);
+          }
+          if (currentIsAdmin && currentGameId) {
+            subscribeRoundForAdminScoring(currentGameId, currentRound);
+          }
+        } else {
+          if (unsubscribeMyRound) { unsubscribeMyRound(); unsubscribeMyRound = null; }
+          if (unsubscribeRoundAdmin) { unsubscribeRoundAdmin(); unsubscribeRoundAdmin = null; }
         }
       }, (err) => {
         console.error(err);
@@ -586,10 +741,11 @@
           const name = (p.displayName || (p.firstName + " " + p.lastName) || "Unnamed").trim();
           const isYou = (pid === currentPlayerId);
           const isAdmin = !!p.isAdmin;
+          const score = typeof p.score === "number" ? p.score : 0;
 
           if (isYou && isAdmin) isYouAdmin = true;
 
-          html += `<div>${name}${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
+          html += `<div>${name} – ${score} pts${isYou ? " (you)" : ""}${isAdmin ? " ⭐" : ""}</div>`;
           options.push({ id: pid, name });
         });
 
@@ -768,8 +924,33 @@
     }
 
     /************************************************
-     * 11) Game controls (admin only)
+     * 11) Game controls (admin) – start / next / end
      ************************************************/
+    async function generateCardsForAllPlayers(gameId, roundNumber, question) {
+      if (!latestPlayersSnapshot || latestPlayersSnapshot.empty) return;
+      const { correct, elseAns, wrongs } = extractOptionsFromQuestion(question || {});
+      const promises = [];
+
+      latestPlayersSnapshot.forEach((docSnap) => {
+        const pid = docSnap.id;
+        const { cards, correctIndex } = buildCardsForPlayer(correct, elseAns, wrongs);
+        const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", pid);
+        promises.push(setDoc(psRef, {
+          cards,
+          correctIndex,
+          hasAnswered: false,
+          isCorrect: false,
+          answerIndex: null,
+          answerTimeMs: null,
+          wrongCount: 0,
+          pointsAwarded: null
+        }, { merge: true }));
+      });
+
+      await Promise.all(promises);
+      log("Generated cards for round " + roundNumber + " for " + latestPlayersSnapshot.size + " player(s).");
+    }
+
     async function handleStartGame() {
       if (!currentIsAdmin || !currentGameId) {
         alert("Only the admin can start the game.");
@@ -799,6 +980,8 @@
           currentRound: 1,
           currentQuestionIndex: 0
         }, { merge: true });
+
+        await generateCardsForAllPlayers(currentGameId, 1, questions[0]);
 
         log("Game started with " + totalRounds + " rounds (mode=" + mode + ").");
       } catch (err) {
@@ -838,6 +1021,8 @@
           currentQuestionIndex: idx
         }, { merge: true });
 
+        await generateCardsForAllPlayers(currentGameId, currentRound, questions[idx]);
+
         log("Moved to round " + currentRound + ".");
       } catch (err) {
         console.error(err);
@@ -866,7 +1051,213 @@
     }
 
     /************************************************
-     * 12) Wire up buttons
+     * 12) My round state (cards, answers)
+     ************************************************/
+    function renderMyCards() {
+      if (!myRoundState || !myRoundState.cards || myRoundState.cards.length === 0) {
+        cardsContainer.innerHTML = "(waiting for round cards)";
+        return;
+      }
+      const cards = myRoundState.cards;
+      const hasAnswered = !!myRoundState.hasAnswered;
+      const isCorrect = !!myRoundState.isCorrect;
+      const answerIndex = myRoundState.answerIndex;
+      const correctIndex = typeof myRoundState.correctIndex === "number"
+        ? myRoundState.correctIndex
+        : -1;
+
+      let html = "";
+      cards.forEach((text, i) => {
+        let extraClass = "";
+        if (hasAnswered) {
+          if (i === correctIndex) extraClass = " correct";
+          else if (i === answerIndex && !isCorrect) extraClass = " wrong";
+        }
+        const disabled = hasAnswered;
+        html += `<button class="cardBtn small${extraClass}" onclick="handleCardClick(${i})" ${disabled ? "disabled" : ""}>${text}</button>`;
+      });
+      cardsContainer.innerHTML = html;
+
+      if (!hasAnswered) {
+        roundFeedbackEl.textContent = "Choose your answer.";
+      } else if (isCorrect) {
+        roundFeedbackEl.textContent = "Correct! Wait for others.";
+      } else {
+        roundFeedbackEl.textContent = "You already answered wrong this round.";
+      }
+    }
+
+    function subscribeToMyRoundState(gameId, roundNumber) {
+      if (!gameId || !roundNumber || !currentPlayerId) return;
+      if (unsubscribeMyRound) {
+        unsubscribeMyRound();
+        unsubscribeMyRound = null;
+      }
+      const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", currentPlayerId);
+      unsubscribeMyRound = onSnapshot(psRef, (snap) => {
+        if (!snap.exists()) {
+          myRoundState = null;
+          cardsContainer.innerHTML = "(waiting for round cards)";
+          roundFeedbackEl.textContent = "Waiting for admin.";
+          return;
+        }
+        myRoundState = snap.data();
+        renderMyCards();
+      }, (err) => {
+        console.error(err);
+        log("onSnapshot (my round) error: " + err.message);
+      });
+    }
+
+    async function handleCardClick(index) {
+      if (!currentGameId || !currentPlayerId || !currentRoundNumber) return;
+      if (!myRoundState || !myRoundState.cards) return;
+
+      const now = Date.now();
+      const correctIndex = typeof myRoundState.correctIndex === "number"
+        ? myRoundState.correctIndex
+        : -1;
+      const isCorrectChoice = (index === correctIndex);
+
+      const psRef = doc(db, "games", currentGameId, "rounds", String(currentRoundNumber), "playerStates", currentPlayerId);
+      const playerRef = doc(db, "games", currentGameId, "players", currentPlayerId);
+
+      // Already answered correctly – ignore
+      if (myRoundState.hasAnswered && myRoundState.isCorrect) {
+        return;
+      }
+
+      try {
+        if (isCorrectChoice) {
+          // mark answered; admin client will award points by order
+          await setDoc(psRef, {
+            hasAnswered: true,
+            isCorrect: true,
+            answerIndex: index,
+            answerTimeMs: now
+          }, { merge: true });
+
+          roundFeedbackEl.textContent = "Correct! (+points will be assigned based on speed)";
+          log("Answered correctly at " + now + ".");
+        } else {
+          // wrong answer – apply penalty
+          const prevWrong = myRoundState.wrongCount || 0;
+          const newWrong = prevWrong + 1;
+          const penalty = -Math.pow(2, newWrong - 1); // -1, -2, -4, ...
+
+          await Promise.all([
+            setDoc(psRef, {
+              wrongCount: newWrong
+            }, { merge: true }),
+            setDoc(playerRef, {
+              score: increment(penalty),
+              totalWrongPenalty: increment(penalty)
+            }, { merge: true })
+          ]);
+
+          roundFeedbackEl.textContent = "Wrong! Penalty " + penalty + " pts (wrong #" + newWrong + " this round).";
+          log("Wrong answer, penalty " + penalty + ".");
+        }
+      } catch (err) {
+        console.error(err);
+        log("Error submitting answer: " + err.message);
+      }
+    }
+
+    /************************************************
+     * 13) Admin scoring subscription
+     ************************************************/
+    function subscribeRoundForAdminScoring(gameId, roundNumber) {
+      if (!currentIsAdmin || !gameId || !roundNumber) return;
+      if (unsubscribeRoundAdmin) {
+        unsubscribeRoundAdmin();
+        unsubscribeRoundAdmin = null;
+      }
+      const colRef = collection(db, "games", gameId, "rounds", String(roundNumber), "playerStates");
+      unsubscribeRoundAdmin = onSnapshot(colRef, (snap) => {
+        handleScoringSnapshot(gameId, roundNumber, snap).catch(err => {
+          console.error(err);
+          log("Error in scoring snapshot: " + err.message);
+        });
+      }, (err) => {
+        console.error(err);
+        log("onSnapshot (round scoring) error: " + err.message);
+      });
+    }
+
+    async function handleScoringSnapshot(gameId, roundNumber, snap) {
+      if (snap.empty) return;
+
+      const correctStates = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.isCorrect && data.answerTimeMs && typeof data.answerTimeMs === "number") {
+          correctStates.push({
+            playerId: docSnap.id,
+            data
+          });
+        }
+      });
+
+      if (correctStates.length === 0) return;
+
+      correctStates.sort((a, b) => a.data.answerTimeMs - b.data.answerTimeMs);
+
+      const awardPromises = [];
+
+      let place = 1;
+      for (const entry of correctStates) {
+        const { playerId, data } = entry;
+        if (typeof data.pointsAwarded === "number") {
+          place++;
+          continue; // already awarded
+        }
+        const points = getPointsForPlace(place);
+
+        const psRef = doc(db, "games", gameId, "rounds", String(roundNumber), "playerStates", playerId);
+        const playerRef = doc(db, "games", gameId, "players", playerId);
+
+        awardPromises.push(
+          setDoc(psRef, { pointsAwarded: points }, { merge: true }),
+          setDoc(playerRef, { score: increment(points) }, { merge: true })
+        );
+
+        log("Awarding " + points + " pts to " + playerId + " (place " + place + ").");
+        place++;
+      }
+
+      if (awardPromises.length > 0) {
+        await Promise.all(awardPromises);
+      }
+    }
+
+    /************************************************
+     * 14) Visual round timer (client-side only)
+     ************************************************/
+    function startVisualTimer() {
+      stopVisualTimer();
+      let timeLeft = 30;
+      roundTimerEl.textContent = timeLeft + "s";
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          roundTimerEl.textContent = "Time up";
+          stopVisualTimer();
+        } else {
+          roundTimerEl.textContent = timeLeft + "s";
+        }
+      }, 1000);
+    }
+    function stopVisualTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      // don't clear text; leave last state
+    }
+
+    /************************************************
+     * 15) Wire up buttons + global click handler
      ************************************************/
     document.getElementById('btnCreate').addEventListener('click', handleCreate);
     document.getElementById('btnJoin').addEventListener('click', handleJoin);
@@ -875,6 +1266,9 @@
     btnStartGame.addEventListener('click', handleStartGame);
     btnNextRound.addEventListener('click', handleNextRound);
     btnEndGame.addEventListener('click', handleEndGame);
+
+    // expose handler so inline onclick can call it
+    window.handleCardClick = handleCardClick;
   </script>
 </body>
 </html>
