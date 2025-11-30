@@ -1,1 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bible Round Table – Play</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: #020617;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.15);
+      --accent2: #22c55e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 40%, #000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 260px;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0.75rem;
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.7);
+      min-height: 0;
+    }
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 0.4rem;
+    }
+    .small {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.1rem;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 0.35rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid #475569;
+      background: #020617;
+      color: var(--text);
+      font: inherit;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.8rem;
+      font: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      background: var(--accent);
+      color: #020617;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #111827;
+      color: var(--text);
+    }
+    button.chip {
+      border-radius: 999px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      background: #0f172a;
+      color: var(--muted);
+      border: 1px solid #1f2937;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+    .vstack { display: flex; flex-direction: column; gap: 0.4rem; }
+    .hstack { display: flex; gap: 0.4rem; align-items: center; }
 
+    /* LEFT: lobby & room list */
+    .roomList {
+      margin-top: 0.4rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.25rem 0.35rem;
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      background: #020617;
+    }
+    .roomCard {
+      border-radius: 10px;
+      border: 1px solid #111827;
+      padding: 0.4rem 0.45rem;
+      margin-bottom: 0.35rem;
+      background: radial-gradient(circle at top, rgba(148,163,184,0.12), #020617 60%);
+      cursor: pointer;
+    }
+    .roomCard:hover { border-color: #334155; }
+    .roomTitle {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .roomMeta {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    /* CENTER: game stage */
+    .stageHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+    .timerBadge {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #0b1220;
+    }
+    #stageStatus {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .verseCard {
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      padding: 0.5rem 0.7rem;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.8), #020617 60%);
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .verseRef {
+      font-size: 0.78rem;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+    .verseText {
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+    .questionText {
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+
+    /* Round table */
+    .tableWrapper {
+      position: relative;
+      height: 260px;
+      margin-top: 0.4rem;
+    }
+    .tableCircle {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 170px; height: 170px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at top, #020617, #020617 40%, #020617 60%);
+      border: 1px solid #0f172a;
+      box-shadow: 0 0 0 1px #1f2937 inset, 0 18px 40px rgba(0,0,0,0.8);
+    }
+    .playerNode {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 0.75rem;
+      width: 90px;
+    }
+    .playerShape {
+      margin: 0 auto 0.2rem;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e5e7eb;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.9);
+      background: linear-gradient(145deg, #1f2937, #020617);
+    }
+    .shape-circle {
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+    }
+    .shape-square {
+      border-radius: 14px;
+      border: 1px solid rgba(248,250,252,0.25);
+      background: linear-gradient(150deg, #0f172a, #020617);
+    }
+    .shape-triangle {
+      width: 0;
+      height: 0;
+      border-left: 24px solid transparent;
+      border-right: 24px solid transparent;
+      border-bottom: 42px solid #1d4ed8;
+      background: none;
+      box-shadow: 0 10px 20px rgba(15,23,42,0.9);
+    }
+    .shape-triangle-inner {
+      margin-top: -36px;
+      font-size: 0.6rem;
+    }
+    .playerName {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .playerScore {
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+    .playerNode.me .playerName {
+      color: var(--accent2);
+      font-weight: 600;
+    }
+    .playerNode.admin .playerName::after {
+      content: " ★";
+      color: var(--accent);
+      font-size: 0.7rem;
+    }
+    .playerNode.inactive {
+      opacity: 0.6;
+      filter: grayscale(0.2);
+    }
+
+    /* Cards */
+    .cardsRow {
+      margin-top: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+    }
+    .cardBtn {
+      border-radius: 12px;
+      padding: 0.45rem 0.7rem;
+      background: #020617;
+      border: 1px solid #334155;
+      color: var(--text);
+      font-size: 0.8rem;
+      min-width: 150px;
+      max-width: 220px;
+      text-align: left;
+      white-space: normal;
+      cursor: pointer;
+    }
+    .cardBtn:hover:not(:disabled) { border-color: var(--accent); }
+    .cardBtn.correct { border-color: var(--accent2); }
+    .cardBtn.wrong { border-color: var(--accent); }
+    .cardBtn:disabled { opacity: 0.6; cursor: default; }
+
+    .roundFeedback {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* RIGHT: chat & mini scoreboard */
+    .chatList {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.45rem;
+      max-height: 230px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      background: #020617;
+    }
+    .chatItem {
+      margin-bottom: 0.2rem;
+    }
+    .chatName {
+      color: var(--accent);
+    }
+    .scoreList {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.45rem;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      background: #020617;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .tableWrapper { height: 220px; }
+    }
+  </style>
+
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <!-- LEFT: Lobby / rooms -->
+    <div class="panel">
+      <h1>Bible Round Table</h1>
+      <div class="small">Join a room and play live with others. This page is the clean player view.</div>
+
+      <div class="vstack" style="margin-top:0.4rem;">
+        <div>
+          <label for="firstName">First name (max 15)</label>
+          <input id="firstName" type="text" maxlength="15" placeholder="e.g. John">
+        </div>
+        <div>
+          <label for="lastName">Last name (max 15)</label>
+          <input id="lastName" type="text" maxlength="15" placeholder="e.g. Kim">
+        </div>
+        <div class="small">Name is your ID. If you join with the same name again, you’ll resume that player.</div>
+      </div>
+
+      <div style="margin-top:0.6rem;">
+        <div class="hstack" style="justify-content:space-between;">
+          <span class="small">Open rooms</span>
+          <span class="small" id="roomHint">Loading…</span>
+        </div>
+        <div class="roomList" id="roomList">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: Game stage -->
+    <div class="panel" id="stagePanel">
+      <div class="stageHeader">
+        <div>
+          <div class="small">Current room</div>
+          <div style="font-size:0.82rem;" id="currentRoomLabel">Not joined</div>
+        </div>
+        <div class="vstack" style="align-items:flex-end;">
+          <div class="timerBadge">
+            Round <span id="roundInfo">–</span> •
+            <span id="timerDisplay">–</span>
+          </div>
+          <div id="stageStatus"></div>
+        </div>
+      </div>
+
+      <div class="verseCard">
+        <div class="verseRef" id="verseRef">Waiting for game…</div>
+        <div class="verseText" id="verseText">Join a room to see verses.</div>
+        <div class="questionText" id="questionText"></div>
+      </div>
+
+      <div class="tableWrapper">
+        <div class="tableCircle"></div>
+        <div id="tablePlayers"></div>
+      </div>
+
+      <div class="cardsRow" id="cardsRow">
+        <!-- cards via JS -->
+      </div>
+      <div class="roundFeedback" id="roundFeedback">Join a room to start.</div>
+    </div>
+
+    <!-- RIGHT: Chat & scoreboard -->
+    <div class="panel">
+      <div class="vstack">
+        <div>
+          <div class="small">Quick chat</div>
+          <div class="hstack" style="flex-wrap:wrap;margin-top:0.3rem;" id="chatButtons">
+            <!-- canned chat buttons -->
+          </div>
+        </div>
+        <div>
+          <div class="small" style="margin-top:0.3rem;">Room chat</div>
+          <div class="chatList" id="chatList"></div>
+        </div>
+        <div>
+          <div class="small" style="margin-top:0.3rem;">Scores</div>
+          <div class="scoreList" id="scoreList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + logic -->
+  <script type="module">
+    /*************** 1. Firebase init (same project) ***************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvowntn96MSlL3Stxqh-gUUGEpAnJT6uo",
+      authDomain: "christian-roundtable.firebaseapp.com",
+      projectId: "christian-roundtable",
+      storageBucket: "christian-roundtable.firebasestorage.app",
+      messagingSenderId: "981074913898",
+      appId: "1:981074913898:web:52183899c18e5cd0aff813",
+      measurementId: "G-JT29F5HZGE"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      setDoc,
+      getDoc,
+      onSnapshot,
+      serverTimestamp,
+      orderBy,
+      limit,
+      query
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    /*************** 2. State ***************/
+    let currentGameId = null;
+    let currentPlayerId = null;
+    let currentPlayerName = null;
+    let currentIsAdmin = false;
+    let currentRoundNumber = 0;
+    let myRoundState = null;
+    let timerInterval = null;
+    let lastGameStatus = null;
+    let confettiFired = false;
+
+    let unsubGamesList = null;
+    let unsubGame = null;
+    let unsubPlayers = null;
+    let unsubMyRound = null;
+    let unsubChat = null;
+
+    let latestPlayers = [];
+
+    /*************** 3. Helpers ***************/
+    function getName() {
+      let f = document.getElementById("firstName").value.trim() || "Anon";
+      let l = document.getElementById("lastName").value.trim() || "Player";
+      f = f.slice(0,15); l = l.slice(0,15);
+      return { firstName: f, lastName: l };
+    }
+    function makePlayerId(firstName, lastName) {
+      const raw = (firstName + "_" + lastName).toLowerCase();
+      return raw.replace(/[^a-z0-9_]/g,"").slice(0,30) || "player_" + Math.random().toString(36).slice(2,9);
+    }
+    function hashToShape(id) {
+      const h = Array.from(id).reduce((a,c)=>a+c.charCodeAt(0),0);
+      return h % 3; // 0 circle,1 square,2 triangle
+    }
+    function startTimerVisual() {
+      stopTimerVisual();
+      let t = 30;
+      const el = document.getElementById("timerDisplay");
+      el.textContent = t + "s";
+      timerInterval = setInterval(() => {
+        t--;
+        if (t <= 0) {
+          el.textContent = "Time up";
+          stopTimerVisual();
+        } else {
+          el.textContent = t + "s";
+        }
+      }, 1000);
+    }
+    function stopTimerVisual() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+    function setStageStatus(text) {
+      document.getElementById("stageStatus").textContent = text;
+    }
+
+    /*************** 4. Rooms list ***************/
+    function subscribeRooms() {
+      const gamesCol = collection(db, "games");
+      const qRooms = query(gamesCol, orderBy("createdAt","desc"), limit(15));
+      unsubGamesList = onSnapshot(qRooms, async (snap) => {
+        const listEl = document.getElementById("roomList");
+        const hint = document.getElementById("roomHint");
+        if (snap.empty) {
+          listEl.innerHTML = '<div class="small">No rooms yet. Ask the host to create one.</div>';
+          hint.textContent = "No rooms";
+          return;
+        }
+        let html = "";
+        const roomPromises = [];
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const id = docSnap.id;
+          roomPromises.push(
+            getRoomPlayerCount(id).then(count => ({id, data:d, count}))
+          );
+        });
+        const rooms = await Promise.all(roomPromises);
+        rooms.forEach(r => {
+          const d = r.data;
+          const id = r.id;
+          const status = d.status || "lobby";
+          const roundsMode = d.roundsMode || "3";
+          const adminName = d.adminDisplayName || "Unknown";
+          const labelStatus =
+            status === "in_progress" ? "In progress" :
+            status === "finished" ? "Finished" : "Lobby";
+          const count = r.count;
+
+          html += `
+            <div class="roomCard" onclick="window.joinRoom('${id}')">
+              <div class="roomTitle">${adminName}'s room</div>
+              <div class="roomMeta">
+                ID: ${id}<br>
+                Status: ${labelStatus} • Mode: ${roundsMode} • Players: ${count}
+              </div>
+            </div>`;
+        });
+        listEl.innerHTML = html;
+        hint.textContent = "Tap a room to join";
+      });
+    }
+
+    async function getRoomPlayerCount(gameId) {
+      const playersCol = collection(db, "games", gameId, "players");
+      const snap = await getDocCount(playersCol);
+      return snap;
+    }
+
+    // minimal "count" helper without new API – just 1 query with limit
+    async function getDocCount(colRef) {
+      // simple compromise: read up to 50; enough for your use
+      const qCount = query(colRef, limit(50));
+      const snap = await getDocsCompat(qCount);
+      return snap.size;
+    }
+
+    import {
+      getDocs as getDocsCompat
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    /*************** 5. Join room ***************/
+    async function joinRoom(gameId) {
+      const { firstName, lastName } = getName();
+      const displayName = (firstName + " " + lastName).trim();
+      const playerId = makePlayerId(firstName,lastName);
+
+      currentGameId = gameId;
+      currentPlayerId = playerId;
+      currentPlayerName = displayName;
+
+      // Register/merge player
+      const pref = doc(db,"games",gameId,"players",playerId);
+      await setDoc(pref,{
+        firstName,lastName,displayName,
+        isAdmin:false,
+        joinedAt: serverTimestamp()
+      }, { merge:true });
+
+      document.getElementById("currentRoomLabel").textContent = "Room " + gameId;
+      setStageStatus("Joined room as " + displayName);
+
+      // subscriptions
+      subscribeGame(gameId);
+      subscribePlayers(gameId);
+      subscribeChat(gameId);
+    }
+    window.joinRoom = joinRoom;
+
+    /*************** 6. Game & players ***************/
+    function subscribeGame(gameId) {
+      if (unsubGame) { unsubGame(); unsubGame=null; }
+      const gref = doc(db,"games",gameId);
+      unsubGame = onSnapshot(gref, (snap)=>{
+        if (!snap.exists()) return;
+        const d = snap.data();
+
+        const status = d.status || "lobby";
+        const roundsMode = d.roundsMode || "3";
+        const totalRounds = d.totalRounds || 0;
+        const currentRound = d.currentRound || 0;
+        currentRoundNumber = currentRound;
+        currentIsAdmin = (d.adminPlayerId === currentPlayerId);
+
+        // verse / question
+        const idx = d.currentQuestionIndex || 0;
+        const questions = d.questions || [];
+        const q = questions[idx] || null;
+
+        document.getElementById("verseRef").textContent =
+          q ? (q.verseRef || q.VerseRef || " ") : "Waiting for verse…";
+        document.getElementById("verseText").textContent =
+          q ? (q.verseText || q.VerseText || "") : "";
+        document.getElementById("questionText").textContent =
+          q ? (q.question || q.Question || "") : "";
+
+        // round status
+        if (status === "in_progress") {
+          document.getElementById("roundInfo").textContent =
+            currentRound + " / " + totalRounds;
+          setStageStatus("Game in progress • Mode: " +
+            (roundsMode==="all" ? "All questions" : roundsMode+" rounds"));
+
+          if (currentRound > 0) {
+            startTimerVisual();
+            if (currentGameId && currentPlayerId) {
+              subscribeMyRound(currentGameId,currentRound);
+            }
+          }
+        } else if (status === "finished") {
+          document.getElementById("roundInfo").textContent =
+            totalRounds > 0 ? totalRounds + " / " + totalRounds : "–";
+          document.getElementById("timerDisplay").textContent = "–";
+          stopTimerVisual();
+          setStageStatus("Game finished");
+
+          // fire confetti once when game finishes
+          if (lastGameStatus !== "finished") {
+            fireEndGameConfetti();
+          }
+        } else {
+          document.getElementById("roundInfo").textContent = "–";
+          document.getElementById("timerDisplay").textContent = "–";
+          stopTimerVisual();
+          setStageStatus("Waiting for host to start…");
+        }
+
+        lastGameStatus = status;
+      });
+    }
+
+    function subscribePlayers(gameId) {
+      if (unsubPlayers) { unsubPlayers(); unsubPlayers=null; }
+      const col = collection(db,"games",gameId,"players");
+      unsubPlayers = onSnapshot(col,(snap)=>{
+        latestPlayers = [];
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          latestPlayers.push({
+            id: docSnap.id,
+            name: (d.displayName || (d.firstName+" "+d.lastName) || "Player").trim(),
+            score: typeof d.score==="number" ? d.score : 0,
+            isAdmin: !!d.isAdmin
+          });
+        });
+        renderPlayersAndScores();
+      });
+    }
+
+    function renderPlayersAndScores() {
+      const tableEl = document.getElementById("tablePlayers");
+      const scoreEl = document.getElementById("scoreList");
+      tableEl.innerHTML = "";
+      scoreEl.innerHTML = "";
+
+      if (!latestPlayers.length) {
+        scoreEl.innerHTML = '<div class="small">No players yet.</div>';
+        return;
+      }
+
+      // SCOREBOARD (right panel)
+      const sorted = [...latestPlayers].sort((a,b)=>b.score - a.score);
+      sorted.forEach((p,idx)=>{
+        const rank = idx+1;
+        const prefix = rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"";
+        const youMark = p.id===currentPlayerId ? " (you)" : "";
+        const adminMark = p.isAdmin ? " ★" : "";
+        scoreEl.innerHTML +=
+          `<div>${prefix} ${p.name}${adminMark} – ${p.score} pts${youMark}</div>`;
+      });
+
+      // ROUND TABLE (center)
+      const n = latestPlayers.length;
+      const radius = 120;
+      latestPlayers.forEach((p,idx)=>{
+        const angle = (2*Math.PI * idx / n) - Math.PI/2;
+        const x = 50 + (radius * Math.cos(angle))/2.2;
+        const y = 50 + (radius * Math.sin(angle))/2.2;
+
+        const node = document.createElement("div");
+        node.className = "playerNode";
+        if (p.id === currentPlayerId) node.classList.add("me");
+        if (p.isAdmin) node.classList.add("admin");
+
+        node.style.left = x + "%";
+        node.style.top = y + "%";
+
+        const shapeType = hashToShape(p.id);
+        let inner = "";
+
+        if (shapeType === 0) {
+          inner = `<div class="playerShape shape-circle"></div>`;
+        } else if (shapeType === 1) {
+          inner = `<div class="playerShape shape-square"></div>`;
+        } else {
+          inner = `<div class="playerShape shape-triangle"><div class="shape-triangle-inner"></div></div>`;
+        }
+
+        node.innerHTML = `
+          ${inner}
+          <div class="playerName">${p.name}</div>
+          <div class="playerScore">${p.score} pts</div>
+        `;
+        tableEl.appendChild(node);
+      });
+    }
+
+    /*************** 7. My round state & cards ***************/
+    function subscribeMyRound(gameId,roundNumber) {
+      if (!currentPlayerId) return;
+      if (unsubMyRound) { unsubMyRound(); unsubMyRound=null; }
+      const ref = doc(db,"games",gameId,"rounds",String(roundNumber),"playerStates",currentPlayerId);
+      unsubMyRound = onSnapshot(ref,(snap)=>{
+        if (!snap.exists()) {
+          myRoundState = null;
+          renderCards();
+          return;
+        }
+        myRoundState = snap.data();
+        renderCards();
+      });
+    }
+
+    function renderCards() {
+      const row = document.getElementById("cardsRow");
+      const feedback = document.getElementById("roundFeedback");
+
+      if (!myRoundState || !myRoundState.cards) {
+        row.innerHTML = "";
+        feedback.textContent = currentGameId ? "Waiting for round cards…" : "Join a room to start.";
+        return;
+      }
+
+      const cards = myRoundState.cards;
+      const hasAnswered = !!myRoundState.hasAnswered;
+      const isCorrect = !!myRoundState.isCorrect;
+      const answerIndex = myRoundState.answerIndex;
+      const correctIndex = typeof myRoundState.correctIndex==="number" ? myRoundState.correctIndex : -1;
+
+      row.innerHTML = "";
+      cards.forEach((text,i)=>{
+        const btn = document.createElement("button");
+        btn.className = "cardBtn";
+        btn.textContent = text;
+
+        if (hasAnswered) {
+          btn.disabled = true;
+          if (i===correctIndex) btn.classList.add("correct");
+          else if (i===answerIndex && !isCorrect) btn.classList.add("wrong");
+        }
+
+        btn.onclick = ()=> handleCardClick(i);
+        row.appendChild(btn);
+      });
+
+      if (!hasAnswered) {
+        feedback.textContent = "Choose your answer.";
+      } else if (isCorrect) {
+        feedback.textContent = "Correct! Points depend on your speed.";
+      } else {
+        feedback.textContent = "You already answered wrong this round.";
+      }
+    }
+
+    async function handleCardClick(index) {
+      if (!currentGameId || !currentPlayerId || !currentRoundNumber) return;
+      if (!myRoundState || !myRoundState.cards) return;
+
+      const now = Date.now();
+      const correctIndex =
+        typeof myRoundState.correctIndex==="number" ? myRoundState.correctIndex : -1;
+      const isCorrectChoice = (index === correctIndex);
+
+      const psRef = doc(db,"games",currentGameId,"rounds",String(currentRoundNumber),"playerStates",currentPlayerId);
+      const playerRef = doc(db,"games",currentGameId,"players",currentPlayerId);
+
+      // already correctly answered → ignore
+      if (myRoundState.hasAnswered && myRoundState.isCorrect) return;
+
+      if (isCorrectChoice) {
+        await setDoc(psRef,{
+          hasAnswered:true,
+          isCorrect:true,
+          answerIndex:index,
+          answerTimeMs: now
+        }, { merge:true });
+      } else {
+        const prevWrong = myRoundState.wrongCount || 0;
+        const newWrong = prevWrong + 1;
+        const penalty = -Math.pow(2,newWrong-1); // -1,-2,-4...
+        await Promise.all([
+          setDoc(psRef,{ wrongCount:newWrong },{ merge:true }),
+          setDoc(playerRef,{
+            score: (myRoundState.score || 0) + penalty
+          }, { merge:true })
+        ]);
+      }
+    }
+    window.handleCardClick = handleCardClick;
+
+    /*************** 8. Chat ***************/
+    const cannedPhrases = [
+      "Hi","Bye","GG","Thanks","You can do it!",
+      "Yes","No","I don't know","But","Amen","Hallelujah"
+    ];
+
+    function setupChatButtons() {
+      const wrap = document.getElementById("chatButtons");
+      cannedPhrases.forEach(text=>{
+        const btn = document.createElement("button");
+        btn.className = "chip";
+        btn.textContent = text;
+        btn.onclick = ()=> sendChat(text);
+        wrap.appendChild(btn);
+      });
+    }
+
+    async function sendChat(text) {
+      if (!currentGameId || !currentPlayerId) return;
+      const name = currentPlayerName || "Player";
+      const col = collection(db,"games",currentGameId,"messages");
+      await addDoc(col,{
+        text,
+        fromName: name,
+        fromId: currentPlayerId,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    function subscribeChat(gameId) {
+      if (unsubChat) { unsubChat(); unsubChat=null; }
+      const col = collection(db,"games",gameId,"messages");
+      const qChat = query(col, orderBy("createdAt","desc"), limit(30));
+      const el = document.getElementById("chatList");
+      unsubChat = onSnapshot(qChat,(snap)=>{
+        let html = "";
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          const name = d.fromName || "Player";
+          const text = d.text || "";
+          html = `<div class="chatItem"><span class="chatName">${name}:</span> ${text}</div>` + html;
+        });
+        el.innerHTML = html || '<div class="small">No messages yet.</div>';
+      });
+    }
+
+    /*************** 9. End-game confetti ***************/
+    function fireEndGameConfetti() {
+      if (confettiFired || typeof confetti === "undefined") return;
+      confettiFired = true;
+
+      if (!latestPlayers.length) return;
+
+      // sort by score
+      const sorted = [...latestPlayers].sort((a,b)=>b.score - a.score);
+      const myIndex = sorted.findIndex(p=>p.id===currentPlayerId);
+      const playerCount = sorted.length;
+
+      let shouldFire = false;
+      if (playerCount >= 4) {
+        // top 3 get confetti
+        shouldFire = myIndex >=0 && myIndex <=2;
+      } else {
+        // only 1st place
+        shouldFire = myIndex === 0;
+      }
+      if (!shouldFire) return;
+
+      // simple burst
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.4 }
+      });
+      setTimeout(()=>confetti({particleCount:80, spread: 60, origin:{y:0.2}}), 400);
+    }
+
+    /*************** 10. Init ***************/
+    setupChatButtons();
+    subscribeRooms();
+  </script>
+</body>
+</html>
