@@ -174,7 +174,6 @@
       <span class="mono">play.html</span>.
     </div>
 
-    <!-- Top row: player info + create/join -->
     <div class="grid">
       <!-- Player info -->
       <div class="panel">
@@ -240,7 +239,7 @@
       </div>
     </div>
 
-    <!-- Middle row: shared game state / players / debug -->
+    <!-- Middle row -->
     <div class="grid" style="margin-top:0.75rem;">
       <!-- Shared game state -->
       <div class="panel">
@@ -326,7 +325,7 @@
         </div>
       </div>
 
-      <!-- Debug + chat + room list for host -->
+      <!-- Debug + chat + rooms -->
       <div class="panel">
         <div class="sectionTitle">Debug Log</div>
         <div id="debugLog"></div>
@@ -377,7 +376,7 @@
         </div>
       </div>
 
-      <!-- Spacer or future controls -->
+      <!-- Tips -->
       <div class="panel">
         <div class="sectionTitle">Tips</div>
         <div class="small">
@@ -433,23 +432,16 @@
     let totalRounds = 0;
     let lastGameStatus = null;
 
-    // listeners
     let unsubGame = null;
     let unsubPlayers = null;
     let unsubHostChat = null;
     let unsubRoomsHost = null;
-    let unsubMyRound = null;
-
-    // timer (visual only)
     let timerInterval = null;
 
-    // Default Apps Script URL (replace with your real one once)
     const DEFAULT_SHEETS_API_URL =
       "https://script.google.com/macros/s/AKfycbzOy5BJ9VbqUlujW2Hg4BbJM6KNdeM_LMjq5EHtafPDPuJI34NAEmDzxgbkvrSHkiPp/exec";
 
-    // Helper
     const $ = id => document.getElementById(id);
-
     function log(msg) {
       const el = $("debugLog");
       el.textContent += msg + "\\n";
@@ -492,7 +484,6 @@
         timerInterval = null;
       }
     }
-
     function blinkTimer() {
       const el = $("stateTimer");
       if (!el) return;
@@ -501,22 +492,17 @@
       el.classList.add("timerBlink");
     }
 
-    /************ Load questions from Sheets (via Apps Script) ************/
+    /************ Load questions from Sheets ************/
     async function loadQuestionsFromSheets(apiUrl) {
-      // NOTE: adjust this to match your existing Apps Script response format if needed.
-      // This version assumes GET apiUrl returns JSON: { questions: [ { id, VerseRef, VerseText, Question, CorrectAnswer, ElseAnswer, Wrong1..Wrong9 } ] }
       const res = await fetch(apiUrl);
       if (!res.ok) throw new Error("Failed to fetch questions from Sheets.");
       const data = await res.json();
-      if (!data || !Array.isArray(data.questions || data)) {
-        throw new Error("Question payload is not in expected format.");
-      }
-      // Accept either {questions:[...]} or just [...]
-      const questions = Array.isArray(data.questions) ? data.questions : data;
-      return questions;
+      const qArr = Array.isArray(data.questions) ? data.questions : (Array.isArray(data) ? data : []);
+      if (!qArr.length) throw new Error("No questions returned from Sheets API.");
+      return qArr;
     }
 
-    /************ Questions -> per-player cards ************/
+    /************ Cards ************/
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -590,7 +576,6 @@
 
       log("Creating game as " + displayName + "…");
 
-      // Load questions from Sheets
       const questions = await loadQuestionsFromSheets(url);
       questionsCache = questions;
       log("Loaded " + questions.length + " questions from Sheets.");
@@ -620,7 +605,6 @@
       $("joinGameId").value = gameId;
       $("currentConnection").textContent = "Connected to game " + gameId;
 
-      // register admin player
       const pref = doc(db,"games",gameId,"players",playerId);
       await setDoc(pref,{
         firstName,lastName,displayName,
@@ -639,10 +623,7 @@
     /************ Join existing game ************/
     async function joinGame() {
       const gameId = $("joinGameId").value.trim();
-      if (!gameId) {
-        alert("Enter a Game ID.");
-        return;
-      }
+      if (!gameId) { alert("Enter a Game ID."); return; }
 
       const { firstName,lastName } = getName();
       const displayName = (firstName + " " + lastName).trim();
@@ -729,7 +710,7 @@
       const col = collection(db,"games",gameId,"players");
       unsubPlayers = onSnapshot(col,(snap)=>{
         latestPlayers = [];
-        const voteCounts = {}; // for admin votes summary (optional)
+        const voteCounts = {};
         snap.forEach(docSnap=>{
           const d = docSnap.data();
           const id = docSnap.id;
@@ -769,7 +750,6 @@
       });
     }
 
-    // show a few most recent non-deleted rooms for convenience
     function subscribeRoomsHost() {
       if (unsubRoomsHost) { unsubRoomsHost(); unsubRoomsHost=null; }
       const gamesCol = collection(db,"games");
@@ -830,7 +810,6 @@
         left.textContent = `${p.name} – ${p.score || 0} pts${youMark}${adminMark}`;
         row.appendChild(left);
 
-        // Kick button (admin only, can't kick admin)
         if (currentIsAdmin && !p.isAdmin) {
           const btn = document.createElement("button");
           btn.textContent = "Kick";
@@ -918,14 +897,18 @@
       await setDoc(doc(db,"games",currentGameId,"players",winner.id),{
         isAdmin:true
       },{merge:true});
-      await setDoc(doc(db,"games",currentGameId,"players",currentPlayerId),{
-        isAdmin:false
-      },{merge:true:true});
+
+      // current host loses admin if they weren't the winner
+      if (currentPlayerId !== winner.id) {
+        await setDoc(doc(db,"games",currentGameId,"players",currentPlayerId),{
+          isAdmin:false
+        },{merge:true});
+      }
 
       log("Admin changed to " + winner.name + " by votes.");
     }
 
-    /************ Kick player (admin only) ************/
+    /************ Kick player ************/
     async function kickPlayer(playerId) {
       if (!currentGameId || !currentPlayerId) return;
       if (!currentIsAdmin) {
@@ -946,7 +929,7 @@
       log("Kicked player " + name);
     }
 
-    /************ Round handling (simplified) ************/
+    /************ Rounds ************/
     async function startGame() {
       if (!currentGameId) {
         alert("Create or join a game first.");
@@ -957,12 +940,9 @@
         return;
       }
       if (!questionsCache.length) {
-        // load from game doc if needed
         const gref = doc(db,"games",currentGameId);
         const snap = await getDoc(gref);
-        if (snap.exists()) {
-          questionsCache = snap.data().questions || [];
-        }
+        if (snap.exists()) questionsCache = snap.data().questions || [];
       }
       if (!questionsCache.length) {
         alert("No questions loaded.");
@@ -987,14 +967,9 @@
 
     async function nextRound() {
       if (!currentGameId) return;
-      if (!currentIsAdmin) {
-        alert("Only admin can change rounds.");
-        return;
-      }
-      if (!totalRounds) {
-        alert("Game not started yet.");
-        return;
-      }
+      if (!currentIsAdmin) { alert("Only admin can change rounds."); return; }
+      if (!totalRounds) { alert("Game not started yet."); return; }
+
       const next = currentRoundNumber + 1;
       if (next > totalRounds) {
         alert("No more rounds. End the game.");
@@ -1009,10 +984,7 @@
 
     async function endGame() {
       if (!currentGameId) return;
-      if (!currentIsAdmin) {
-        alert("Only admin can end the game.");
-        return;
-      }
+      if (!currentIsAdmin) { alert("Only admin can end the game."); return; }
       const gref = doc(db,"games",currentGameId);
       await setDoc(gref,{ status:"finished" },{merge:true});
       stopTimerVisual();
@@ -1098,7 +1070,6 @@
 
     /************ UI wiring ************/
     document.addEventListener("DOMContentLoaded", () => {
-      // prefill Sheets URL from localStorage or default
       const input = $("sheetsApiUrl");
       if (input) {
         const saved = localStorage.getItem("sheetsApiUrl");
